@@ -59,6 +59,8 @@ import org.apache.rocketmq.remoting.exception.RemotingException;
  *
  * <p> <strong>Thread Safety:</strong> After configuring and starting process, this class can be regarded as thread-safe
  * and used among multiple threads context. </p>
+ *
+ * 发送消息的入口类。
  */
 public class DefaultMQProducer extends ClientConfig implements MQProducer {
 

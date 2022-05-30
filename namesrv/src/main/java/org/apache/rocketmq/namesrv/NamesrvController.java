@@ -38,25 +38,32 @@ import org.apache.rocketmq.remoting.netty.NettyServerConfig;
 import org.apache.rocketmq.remoting.netty.TlsSystemConfig;
 import org.apache.rocketmq.srvutil.FileWatchService;
 
-
+// NameSrv启动入口类
 public class NamesrvController {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.NAMESRV_LOGGER_NAME);
 
+    // NameSrv 配置信息
     private final NamesrvConfig namesrvConfig;
 
+    // NettyServer 配置信息
     private final NettyServerConfig nettyServerConfig;
 
     private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactoryImpl(
         "NSScheduledThread"));
+    // 键值管理类
     private final KVConfigManager kvConfigManager;
+    // 路由信息管理类
     private final RouteInfoManager routeInfoManager;
 
+    // 实际启动的Netty server
     private RemotingServer remotingServer;
 
+    // Broker管理
     private BrokerHousekeepingService brokerHousekeepingService;
 
     private ExecutorService remotingExecutor;
 
+    // 配置类
     private Configuration configuration;
     private FileWatchService fileWatchService;
 
@@ -73,17 +80,22 @@ public class NamesrvController {
         this.configuration.setStorePathFromConfig(this.namesrvConfig, "configStorePath");
     }
 
+    // 启动初始化
     public boolean initialize() {
 
+        // 加载配置
         this.kvConfigManager.load();
 
+        // 创建netty服务器
         this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.brokerHousekeepingService);
 
         this.remotingExecutor =
             Executors.newFixedThreadPool(nettyServerConfig.getServerWorkerThreads(), new ThreadFactoryImpl("RemotingExecutorThread_"));
 
+        // 用来处理netty server收到的请求
         this.registerProcessor();
 
+        // 扫描不活跃的broker。 每10s执行一次
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -92,6 +104,7 @@ public class NamesrvController {
             }
         }, 5, 10, TimeUnit.SECONDS);
 
+        // 定期打印kv config，每10min执行一次
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -100,9 +113,11 @@ public class NamesrvController {
             }
         }, 1, 10, TimeUnit.MINUTES);
 
+        //扫描tls配置？
         if (TlsSystemConfig.tlsMode != TlsMode.DISABLED) {
             // Register a listener to reload SslContext
             try {
+                // 监听ssl整数相关配置
                 fileWatchService = new FileWatchService(
                     new String[] {
                         TlsSystemConfig.tlsServerCertPath,
@@ -143,7 +158,7 @@ public class NamesrvController {
 
     private void registerProcessor() {
         if (namesrvConfig.isClusterTest()) {
-
+            // 测试请求处理器？？ 什么情况下会用到。todo
             this.remotingServer.registerDefaultProcessor(new ClusterTestRequestProcessor(this, namesrvConfig.getProductEnvName()),
                 this.remotingExecutor);
         } else {
@@ -160,6 +175,7 @@ public class NamesrvController {
         }
     }
 
+    // 关闭资源
     public void shutdown() {
         this.remotingServer.shutdown();
         this.remotingExecutor.shutdown();

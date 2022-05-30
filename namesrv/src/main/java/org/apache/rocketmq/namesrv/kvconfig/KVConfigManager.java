@@ -44,6 +44,7 @@ public class KVConfigManager {
     public void load() {
         String content = null;
         try {
+            // 读取kvConfig配置文件内容
             content = MixAll.file2String(this.namesrvController.getNamesrvConfig().getKvConfigPath());
         } catch (IOException e) {
             log.warn("Load KV config table exception", e);
@@ -87,6 +88,7 @@ public class KVConfigManager {
         this.persist();
     }
 
+    // 把配置持久化到文件
     public void persist() {
         try {
             this.lock.readLock().lockInterruptibly();
@@ -169,6 +171,7 @@ public class KVConfigManager {
         return null;
     }
 
+    // 遍历configTable，打印到日志
     public void printAllPeriodically() {
         try {
             this.lock.readLock().lockInterruptibly();

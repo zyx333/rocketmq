@@ -1,0 +1,17 @@
+@startuml
+
+autonumber
+
+DefaultMQProducer -> DefaultMQProducerImpl++: 客户端启动 start()
+DefaultMQProducerImpl --> DefaultMQProducerImpl--: start(boolen startFactory)
+
+DefaultMQProducerImpl -> MQClientInstance:start()
+
+MQClientInstance -> MQClientAPIImpl: start()
+
+MQClientAPIImpl -> NettyRemotingClient: start()
+NettyRemotingClient -> NettyRemotingClient: 初始化nettyClient
+NettyRemotingClient -> NettyRemotingClient: createChannel() 创建连接
+
+
+@enduml

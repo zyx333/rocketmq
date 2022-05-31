@@ -167,6 +167,7 @@ public class NamesrvController {
         }
     }
 
+    // NameSrv启动
     public void start() throws Exception {
         this.remotingServer.start();
 

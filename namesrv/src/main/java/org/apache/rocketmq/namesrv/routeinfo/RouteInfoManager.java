@@ -153,7 +153,7 @@ public class RouteInfoManager {
                 String oldAddr = brokerData.getBrokerAddrs().put(brokerId, brokerAddr);
                 registerFirst = registerFirst || (null == oldAddr);
 
-                // master的处理逻辑 todo
+                // master的处理逻辑
                 if (null != topicConfigWrapper
                     && MixAll.MASTER_ID == brokerId) {
                     // 如果broker信息有变化或者是第一次注册

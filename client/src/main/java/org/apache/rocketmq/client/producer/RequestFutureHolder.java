@@ -38,6 +38,7 @@ import org.apache.rocketmq.logging.InternalLogger;
 public class RequestFutureHolder {
     private static InternalLogger log = ClientLogger.getLog();
     private static final RequestFutureHolder INSTANCE = new RequestFutureHolder();
+    // 保存请求future的映射
     private ConcurrentHashMap<String, RequestResponseFuture> requestFutureTable = new ConcurrentHashMap<String, RequestResponseFuture>();
     private final Set<DefaultMQProducerImpl> producerSet = new HashSet<DefaultMQProducerImpl>();
     private ScheduledExecutorService scheduledExecutorService = null;

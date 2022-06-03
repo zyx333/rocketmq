@@ -202,6 +202,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
                     nettyClientConfig.getWriteBufferLowWaterMark(), nettyClientConfig.getWriteBufferHighWaterMark()));
         }
 
+        // 定时任务扫描过期请求
         this.timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {

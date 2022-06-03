@@ -86,6 +86,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      *
      * See {@linktourl http://rocketmq.apache.org/docs/core-concept/} for more discussion.
      */
+    // 主要用于事务消息
     private String producerGroup;
 
     /**
@@ -96,6 +97,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     /**
      * Number of queues to create per default topic.
      */
+    // 每个topic默认四个队列
     private volatile int defaultTopicQueueNums = 4;
 
     /**
@@ -279,6 +281,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      *
      * @throws MQClientException if there is any unexpected error.
      */
+    // 启动生产者
     @Override
     public void start() throws MQClientException {
         this.setProducerGroup(withNamespace(this.producerGroup));

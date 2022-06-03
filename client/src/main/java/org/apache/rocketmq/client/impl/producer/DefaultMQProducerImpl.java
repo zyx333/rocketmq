@@ -181,17 +181,22 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
     public void start(final boolean startFactory) throws MQClientException {
         switch (this.serviceState) {
-            case CREATE_JUST:
+            case CREATE_JUST: // 只有状态为CREATE_JUST时才会启动
+                // 先修改状态为START_FAILED，防止启动多个producer
                 this.serviceState = ServiceState.START_FAILED;
 
+                //检查groupName是否合法
                 this.checkConfig();
 
+                // 判断是否需要设置InstanceName
                 if (!this.defaultMQProducer.getProducerGroup().equals(MixAll.CLIENT_INNER_PRODUCER_GROUP)) {
                     this.defaultMQProducer.changeInstanceNameToPID();
                 }
 
+                // 构建MQClientInstance对象
                 this.mQClientFactory = MQClientManager.getInstance().getOrCreateMQClientInstance(this.defaultMQProducer, rpcHook);
 
+                // 将当前实例注册到producerTable中
                 boolean registerOK = mQClientFactory.registerProducer(this.defaultMQProducer.getProducerGroup(), this);
                 if (!registerOK) {
                     this.serviceState = ServiceState.CREATE_JUST;
@@ -200,9 +205,11 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                         null);
                 }
 
+                // 将默认主题TBW102注册到topicPublishInfoTable中
                 this.topicPublishInfoTable.put(this.defaultMQProducer.getCreateTopicKey(), new TopicPublishInfo());
 
                 if (startFactory) {
+                    // 启动MQClientInstance实例
                     mQClientFactory.start();
                 }
 
@@ -221,8 +228,11 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                 break;
         }
 
+        // 向所有的broker发送心跳
+        // 并上传FilterClass？？todo
         this.mQClientFactory.sendHeartbeatToAllBrokerWithLock();
 
+        // 启动定时任务。 扫描超时请求
         RequestFutureHolder.getInstance().startScheduledTask(this);
 
     }

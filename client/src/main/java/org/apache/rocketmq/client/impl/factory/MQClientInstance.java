@@ -229,18 +229,24 @@ public class MQClientInstance {
                 case CREATE_JUST:
                     this.serviceState = ServiceState.START_FAILED;
                     // If not specified,looking address from name server
+                    // 获取nameSrv地址
                     if (null == this.clientConfig.getNamesrvAddr()) {
                         this.mQClientAPIImpl.fetchNameServerAddr();
                     }
                     // Start request-response channel
+                    // 初始化Nettyclient，但是这里还没有启动
                     this.mQClientAPIImpl.start();
                     // Start various schedule tasks
+                    // 启动各种定时任务
                     this.startScheduledTask();
                     // Start pull service
+                    // 启动pullMessageService
                     this.pullMessageService.start();
                     // Start rebalance service
+                    // 启动rebalanceService
                     this.rebalanceService.start();
                     // Start push service
+                    // 启动消息发送
                     this.defaultMQProducer.getDefaultMQProducerImpl().start(false);
                     log.info("the client factory [{}] start OK", this.clientId);
                     this.serviceState = ServiceState.RUNNING;
@@ -254,6 +260,7 @@ public class MQClientInstance {
     }
 
     private void startScheduledTask() {
+        // 每隔两分钟拉取NameServer地址
         if (null == this.clientConfig.getNamesrvAddr()) {
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
@@ -268,6 +275,7 @@ public class MQClientInstance {
             }, 1000 * 10, 1000 * 60 * 2, TimeUnit.MILLISECONDS);
         }
 
+        // 每30s， 更新topic路由信息
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -280,6 +288,7 @@ public class MQClientInstance {
             }
         }, 10, this.clientConfig.getPollNameServerInterval(), TimeUnit.MILLISECONDS);
 
+        // 每30s，清理下线的broker，并向broker发送心跳；
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -293,6 +302,7 @@ public class MQClientInstance {
             }
         }, 1000, this.clientConfig.getHeartbeatBrokerInterval(), TimeUnit.MILLISECONDS);
 
+        // 每隔5s，持久化consumer消费消息的offset
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override
@@ -305,6 +315,7 @@ public class MQClientInstance {
             }
         }, 1000 * 10, this.clientConfig.getPersistConsumerOffsetInterval(), TimeUnit.MILLISECONDS);
 
+        // 每隔1min，调整消费端的线程数
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override

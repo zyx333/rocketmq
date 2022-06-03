@@ -82,6 +82,7 @@ public class TopicValidator {
         }
     }
 
+    // VALID_CHAR_BIT_MAP里存储了合法的字符。根据VALID_CHAR_BIT_MAP判断命名是否合法
     public static boolean isTopicOrGroupIllegal(String str) {
         int strLen = str.length();
         int len = VALID_CHAR_BIT_MAP.length;

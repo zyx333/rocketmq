@@ -97,6 +97,7 @@ public class MQClientInstance {
     private final ConcurrentMap<String/* group */, MQAdminExtInner> adminExtTable = new ConcurrentHashMap<String, MQAdminExtInner>();
     private final NettyClientConfig nettyClientConfig;
     private final MQClientAPIImpl mQClientAPIImpl;
+    // 与NameSrv进行交互，创建topic，获取queue等
     private final MQAdminImpl mQAdminImpl;
     private final ConcurrentMap<String/* Topic */, TopicRouteData> topicRouteTable = new ConcurrentHashMap<String, TopicRouteData>();
     private final Lock lockNamesrv = new ReentrantLock();
@@ -115,6 +116,7 @@ public class MQClientInstance {
     private final PullMessageService pullMessageService;
     private final RebalanceService rebalanceService;
     private final DefaultMQProducer defaultMQProducer;
+    // 用于统计consumer消费信息
     private final ConsumerStatsManager consumerStatsManager;
     private final AtomicLong sendHeartbeatTimesTotal = new AtomicLong(0);
     private ServiceState serviceState = ServiceState.CREATE_JUST;
@@ -315,7 +317,8 @@ public class MQClientInstance {
             }
         }, 1000 * 10, this.clientConfig.getPersistConsumerOffsetInterval(), TimeUnit.MILLISECONDS);
 
-        // 每隔1min，调整消费端的线程数
+        // 每隔1min，调整消费端的线程数。
+        // 不过目前没有具体实现
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override

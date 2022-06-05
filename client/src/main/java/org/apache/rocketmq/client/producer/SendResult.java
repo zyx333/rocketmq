@@ -21,6 +21,7 @@ import org.apache.rocketmq.common.message.MessageQueue;
 
 public class SendResult {
     private SendStatus sendStatus;
+    // 消息唯一id，client在发送消息时生成
     private String msgId;
     private MessageQueue messageQueue;
     private long queueOffset;

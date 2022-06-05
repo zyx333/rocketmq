@@ -1,0 +1,9 @@
+@startuml
+autonumber 1
+DefaultMQProducer -> DefaultMQProducerImpl: send(Message) 消息发送的入口
+DefaultMQProducerImpl --> DefaultMQProducerImpl: sendDefaultImpl()
+
+
+
+
+@enduml

@@ -60,6 +60,7 @@ public class Validators {
         }
         // topic
         Validators.checkTopic(msg.getTopic());
+        // 不允许发送消息的topic。比如系统默认的定时消息SCHEDULE_TOPIC_XXXX
         Validators.isNotAllowedSendTopic(msg.getTopic());
 
         // body
@@ -71,6 +72,7 @@ public class Validators {
             throw new MQClientException(ResponseCode.MESSAGE_ILLEGAL, "the message body length is zero");
         }
 
+        // 校验消息长度，最大为4M
         if (msg.getBody().length > defaultMQProducer.getMaxMessageSize()) {
             throw new MQClientException(ResponseCode.MESSAGE_ILLEGAL,
                 "the message body size over max value, MAX: " + defaultMQProducer.getMaxMessageSize());

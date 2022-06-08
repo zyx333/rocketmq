@@ -70,12 +70,17 @@ public class RemotingCommand {
         }
     }
 
+    //request中不同的code表示不同的请求；response中的code表示响应是否成功
     private int code;
     private LanguageCode language = LanguageCode.JAVA;
     private int version = 0;
+    // 标识唯一的请求
     private int opaque = requestId.getAndIncrement();
+    // 区分是普通rpc还是oneWay rpc
     private int flag = 0;
+    // 传输自定义文本信息
     private String remark;
+    // 自定义扩展信息
     private HashMap<String, String> extFields;
     private transient CommandCustomHeader customHeader;
 

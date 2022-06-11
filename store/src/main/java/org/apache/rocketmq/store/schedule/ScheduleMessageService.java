@@ -132,6 +132,7 @@ public class ScheduleMessageService extends ConfigManager {
             if (this.enableAsyncDeliver) {
                 this.handleExecutorService = new ScheduledThreadPoolExecutor(this.maxDelayLevel, new ThreadFactoryImpl("ScheduleMessageExecutorHandleThread_"));
             }
+            // 遍历延迟级别，每个延迟级别定时投递消息
             for (Map.Entry<Integer, Long> entry : this.delayLevelTable.entrySet()) {
                 Integer level = entry.getKey();
                 Long timeDelay = entry.getValue();
@@ -148,6 +149,7 @@ public class ScheduleMessageService extends ConfigManager {
                 }
             }
 
+            // 每个10s，将延迟消息信息持久化到磁盘
             this.deliverExecutorService.scheduleAtFixedRate(new Runnable() {
 
                 @Override
@@ -419,6 +421,7 @@ public class ScheduleMessageService extends ConfigManager {
                             log.error("[BUG] can't find consume queue extend file content!addr={}, offsetPy={}, sizePy={}",
                                 tagsCode, offsetPy, sizePy);
                             long msgStoreTime = defaultMessageStore.getCommitLog().pickupStoreTimestamp(offsetPy, sizePy);
+                            // 计算消息投递时间：写入时间+延迟时间
                             tagsCode = computeDeliverTimestamp(delayLevel, msgStoreTime);
                         }
                     }
@@ -446,6 +449,7 @@ public class ScheduleMessageService extends ConfigManager {
                     }
 
                     boolean deliverSuc;
+                    // 投递消息
                     if (ScheduleMessageService.this.enableAsyncDeliver) {
                         deliverSuc = this.asyncDeliver(msgInner, msgExt.getMsgId(), offset, offsetPy, sizePy);
                     } else {

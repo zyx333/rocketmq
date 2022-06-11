@@ -292,6 +292,7 @@ public class DefaultMessageStore implements MessageStore {
 
         if (!messageStoreConfig.isEnableDLegerCommitLog()) {
             this.haService.start();
+            // 处理延迟消息
             this.handleScheduleMessageService(messageStoreConfig.getBrokerRole());
         }
 

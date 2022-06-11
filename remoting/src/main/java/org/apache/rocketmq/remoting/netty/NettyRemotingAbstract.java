@@ -467,15 +467,19 @@ public abstract class NettyRemotingAbstract {
             }
 
             final ResponseFuture responseFuture = new ResponseFuture(channel, opaque, timeoutMillis - costTime, invokeCallback, once);
+            // 保存请求id和future的映射
             this.responseTable.put(opaque, responseFuture);
             try {
+                // 发送消息
                 channel.writeAndFlush(request).addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture f) throws Exception {
                         if (f.isSuccess()) {
+                            // 请求成功
                             responseFuture.setSendRequestOK(true);
                             return;
                         }
+                        // 请求失败
                         requestFail(opaque);
                         log.warn("send a request command to channel <{}> failed.", RemotingHelper.parseChannelRemoteAddr(channel));
                     }

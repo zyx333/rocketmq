@@ -203,6 +203,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         }
 
         // 定时任务扫描过期请求
+        // 异步发送消息时，会把id和future的关系保存到responseTable。这里定时扫描进行处理
         this.timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {

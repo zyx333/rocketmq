@@ -92,6 +92,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
      * </p>
      *
      * This field defaults to clustering.
+     * 消息模式，包括广播和集群两种
      */
     private MessageModel messageModel = MessageModel.CLUSTERING;
 
@@ -138,6 +139,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
 
     /**
      * Queue allocation algorithm specifying how message queues are allocated to each consumer clients.
+     * 分配消息队列的策略
      */
     private AllocateMessageQueueStrategy allocateMessageQueueStrategy;
 
@@ -700,6 +702,7 @@ public class DefaultMQPushConsumer extends ClientConfig implements MQPushConsume
 
     /**
      * This method gets internal infrastructure readily to serve. Instances must call this method after configuration.
+     * 消费者启动入口
      *
      * @throws MQClientException if there is any client error.
      */

@@ -26,6 +26,7 @@ import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageQueue;
 import org.apache.rocketmq.remoting.exception.RemotingException;
 
+// 定义了消息发送相关的方法
 public interface MQProducer extends MQAdmin {
     void start() throws MQClientException;
 

@@ -24,6 +24,7 @@ import org.apache.rocketmq.remoting.exception.RemotingException;
 
 /**
  * Base interface for MQ management
+ * mq的基本操作，如创建队列，查询消息等
  */
 public interface MQAdmin {
     /**

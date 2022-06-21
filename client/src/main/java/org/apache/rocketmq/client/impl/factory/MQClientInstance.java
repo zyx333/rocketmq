@@ -662,6 +662,7 @@ public class MQClientInstance {
                             }
 
                             // Update Pub info
+                            // 生产者启动时，会把生产者客户端加入到producerTable中，所以这里可以更新生产者的topicPublishInfoTable
                             if (!producerTable.isEmpty()) {
                                 TopicPublishInfo publishInfo = topicRouteData2TopicPublishInfo(topic, topicRouteData);
                                 publishInfo.setHaveTopicRouterInfo(true);

@@ -636,8 +636,11 @@ public class MQClientInstance {
                             }
                         }
                     } else {
+                        // 使用指定topic查询路由信息
                         topicRouteData = this.mQClientAPIImpl.getTopicRouteInfoFromNameServer(topic, clientConfig.getMqClientApiTimeout());
                     }
+
+                    // 如果没查到路由信息，直接返回false
                     if (topicRouteData != null) {
                         TopicRouteData old = this.topicRouteTable.get(topic);
                         // 对比路由信息是否改变
@@ -649,9 +652,11 @@ public class MQClientInstance {
                             log.info("the topic[{}] route info changed, old[{}] ,new[{}]", topic, old, topicRouteData);
                         }
 
+                        // 如果路由信息与缓存里的相比没有发生变化，直接返回false
                         if (changed) {
                             TopicRouteData cloneTopicRouteData = topicRouteData.cloneTopicRouteData();
 
+                            // 更新缓存的broker地址信息
                             for (BrokerData bd : topicRouteData.getBrokerDatas()) {
                                 this.brokerAddrTable.put(bd.getBrokerName(), bd.getBrokerAddrs());
                             }
@@ -665,6 +670,7 @@ public class MQClientInstance {
                                     Entry<String, MQProducerInner> entry = it.next();
                                     MQProducerInner impl = entry.getValue();
                                     if (impl != null) {
+                                        // 更新topic的信息topicPublishInfoTable
                                         impl.updateTopicPublishInfo(topic, publishInfo);
                                     }
                                 }
@@ -683,6 +689,7 @@ public class MQClientInstance {
                                 }
                             }
                             log.info("topicRouteTable.put. Topic = {}, TopicRouteData[{}]", topic, cloneTopicRouteData);
+                            // 更新topic的路由信息
                             this.topicRouteTable.put(topic, cloneTopicRouteData);
                             return true;
                         }

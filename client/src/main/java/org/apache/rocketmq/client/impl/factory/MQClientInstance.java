@@ -181,9 +181,10 @@ public class MQClientInstance {
             List<QueueData> qds = route.getQueueDatas();
             Collections.sort(qds);
             for (QueueData qd : qds) {
-                // 判断队列是否具有写权限
+                // 判断队列是否具有写权限。只有有写权限的队列才会继续执行
                 if (PermName.isWriteable(qd.getPerm())) {
                     BrokerData brokerData = null;
+                    // 找到相同brokerName的broker即跳出循环
                     for (BrokerData bd : route.getBrokerDatas()) {
                         if (bd.getBrokerName().equals(qd.getBrokerName())) {
                             brokerData = bd;

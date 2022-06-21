@@ -572,7 +572,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             Exception exception = null;
             SendResult sendResult = null;
             // 重试次数.
-            // 异步发送次数为1，不会重试
+            // 异步发送次数为1，不会重试。异步重试在收到消息发送结果执行回调之前进行重试
             int timesTotal = communicationMode == CommunicationMode.SYNC ? 1 + this.defaultMQProducer.getRetryTimesWhenSendFailed() : 1;
             int times = 0;
             String[] brokersSent = new String[timesTotal];
@@ -679,6 +679,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
             info += FAQUrl.suggestTodo(FAQUrl.SEND_MSG_FAILED);
 
+            // 对异常信息进行处理，不同的异常类型对应不同的错误码。统一进行返回。
+            // 可以参考此异常处理方式
             MQClientException mqClientException = new MQClientException(info, exception);
             if (callTimeout) {
                 throw new RemotingTooMuchRequestException("sendDefaultImpl call timeout");

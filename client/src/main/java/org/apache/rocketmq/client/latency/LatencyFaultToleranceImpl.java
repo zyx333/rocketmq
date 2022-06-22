@@ -79,8 +79,10 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
         }
 
         if (!tmpList.isEmpty()) {
+            // 随机打乱顺序
             Collections.shuffle(tmpList);
 
+            // 对规避的broker排序：可用的broker在前面； 发送延迟较短的在前面；规避时间到期较早的在前面
             Collections.sort(tmpList);
 
             final int half = tmpList.size() / 2;
@@ -109,7 +111,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
         private final String name;
         // 消息发送故障的延迟时间
         private volatile long currentLatency;
-        // 故障规避的开始时间
+        // 故障规避的结束时间，此时间之后broker恢复可用
         private volatile long startTimestamp;
 
         public FaultItem(final String name) {

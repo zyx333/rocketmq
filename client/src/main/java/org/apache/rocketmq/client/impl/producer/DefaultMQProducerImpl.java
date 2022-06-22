@@ -578,6 +578,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             String[] brokersSent = new String[timesTotal];
             // 循环发送消息，直到成功或者发送超时
             for (; times < timesTotal; times++) {
+                // 上一次选择的发送消息失败的broker
                 String lastBrokerName = null == mq ? null : mq.getBrokerName();
                 // 选择消息发送的队列
                 MessageQueue mqSelected = this.selectOneMessageQueue(topicPublishInfo, lastBrokerName);
@@ -601,6 +602,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                         // 发送消息
                         sendResult = this.sendKernelImpl(msg, mq, communicationMode, sendCallback, topicPublishInfo, timeout - costTime);
                         endTimestamp = System.currentTimeMillis();
+                        // 更新消息容错信息。 isolation表示是否规避broker
                         this.updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, false);
                         switch (communicationMode) {
                             case ASYNC:
@@ -623,6 +625,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     } catch (RemotingException e) {
                         // 超时则重试
                         endTimestamp = System.currentTimeMillis();
+                        // 发生异常时也更新消息容错信息
                         this.updateFaultItem(mq.getBrokerName(), endTimestamp - beginTimestampPrev, true);
                         log.warn(String.format("sendKernelImpl exception, resend at once, InvokeID: %s, RT: %sms, Broker: %s", invokeID, endTimestamp - beginTimestampPrev, mq), e);
                         log.warn(msg.toString());

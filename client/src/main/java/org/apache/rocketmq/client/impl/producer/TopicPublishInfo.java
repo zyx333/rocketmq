@@ -71,6 +71,7 @@ public class TopicPublishInfo {
 
     public MessageQueue selectOneMessageQueue(final String lastBrokerName) {
         if (lastBrokerName == null) {
+            // 根据sendWhichQueue递增取模选择队列
             return selectOneMessageQueue();
         } else {
             for (int i = 0; i < this.messageQueueList.size(); i++) {
@@ -79,7 +80,7 @@ public class TopicPublishInfo {
                 if (pos < 0)
                     pos = 0;
                 MessageQueue mq = this.messageQueueList.get(pos);
-                // 与上一个brokerName不一样？todo
+                // 选择与上一次发送消息不同的broker，避免再次失败
                 if (!mq.getBrokerName().equals(lastBrokerName)) {
                     return mq;
                 }

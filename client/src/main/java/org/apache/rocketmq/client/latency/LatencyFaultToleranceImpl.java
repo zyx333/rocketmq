@@ -29,25 +29,30 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
 
     private final ThreadLocalIndex whichItemWorst = new ThreadLocalIndex();
 
+    // 更新失败条目
     @Override
     public void updateFaultItem(final String name, final long currentLatency, final long notAvailableDuration) {
         FaultItem old = this.faultItemTable.get(name);
         if (null == old) {
             final FaultItem faultItem = new FaultItem(name);
             faultItem.setCurrentLatency(currentLatency);
+            // 设置故障规避的到期时间。也就是在此时间之后，该broker规避结束
             faultItem.setStartTimestamp(System.currentTimeMillis() + notAvailableDuration);
 
+            // 双重检查
             old = this.faultItemTable.putIfAbsent(name, faultItem);
             if (old != null) {
                 old.setCurrentLatency(currentLatency);
                 old.setStartTimestamp(System.currentTimeMillis() + notAvailableDuration);
             }
         } else {
+            // 如果已经存在，则重新设置broker的规避时间
             old.setCurrentLatency(currentLatency);
             old.setStartTimestamp(System.currentTimeMillis() + notAvailableDuration);
         }
     }
 
+    //判断broker是否可用
     @Override
     public boolean isAvailable(final String name) {
         final FaultItem faultItem = this.faultItemTable.get(name);
@@ -57,11 +62,13 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
         return true;
     }
 
+    // 移除失败条目，broker重新参与路由计算
     @Override
     public void remove(final String name) {
         this.faultItemTable.remove(name);
     }
 
+    // 从规避的broker选择一个可用的broker
     @Override
     public String pickOneAtLeast() {
         final Enumeration<FaultItem> elements = this.faultItemTable.elements();
@@ -96,9 +103,13 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
             '}';
     }
 
+    // 表示规避的broker条目
     class FaultItem implements Comparable<FaultItem> {
+        // broker名称
         private final String name;
+        // 消息发送故障的延迟时间
         private volatile long currentLatency;
+        // 故障规避的开始时间
         private volatile long startTimestamp;
 
         public FaultItem(final String name) {
@@ -130,6 +141,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
             return 0;
         }
 
+        // 规避时间结束则broker恢复可用
         public boolean isAvailable() {
             return (System.currentTimeMillis() - startTimestamp) >= 0;
         }

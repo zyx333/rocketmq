@@ -22,6 +22,7 @@ import org.apache.rocketmq.client.log.ClientLogger;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+// 消息失败策略，延迟实现的门面类
 public class MQFaultStrategy {
     private final static InternalLogger log = ClientLogger.getLog();
     private final LatencyFaultTolerance<String> latencyFaultTolerance = new LatencyFaultToleranceImpl();
@@ -29,7 +30,9 @@ public class MQFaultStrategy {
     // 控制对发送超时的broker进行一段时间的退避。
     private boolean sendLatencyFaultEnable = false;
 
+    //
     private long[] latencyMax = {50L, 100L, 550L, 1000L, 2000L, 3000L, 15000L};
+    // 不可用时长，在此时间内，broker会被规避
     private long[] notAvailableDuration = {0L, 0L, 30000L, 60000L, 120000L, 180000L, 600000L};
 
     public long[] getNotAvailableDuration() {
@@ -62,6 +65,7 @@ public class MQFaultStrategy {
         if (this.sendLatencyFaultEnable) {
             try {
                 int index = tpInfo.getSendWhichQueue().incrementAndGet();
+                // 遍历队列，如果对应的broker可用，则直接返回对应的队列
                 for (int i = 0; i < tpInfo.getMessageQueueList().size(); i++) {
                     // 取模获取可用的MessageQueue
                     int pos = Math.abs(index++) % tpInfo.getMessageQueueList().size();
@@ -97,6 +101,7 @@ public class MQFaultStrategy {
 
     public void updateFaultItem(final String brokerName, final long currentLatency, boolean isolation) {
         if (this.sendLatencyFaultEnable) {
+            // 如果isolation为TRUE，则用30000来计算延迟时间。因为30000比latencyMax数组中的最大值还大，所以退避时间取为notAvailableDuration中的最大值600000
             long duration = computeNotAvailableDuration(isolation ? 30000 : currentLatency);
             this.latencyFaultTolerance.updateFaultItem(brokerName, currentLatency, duration);
         }

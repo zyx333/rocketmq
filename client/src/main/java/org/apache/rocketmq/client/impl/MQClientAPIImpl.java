@@ -460,7 +460,7 @@ public class MQClientAPIImpl {
         RemotingCommand request = null;
         String msgType = msg.getProperty(MessageConst.PROPERTY_MESSAGE_TYPE);
         boolean isReply = msgType != null && msgType.equals(MixAll.REPLY_MESSAGE_FLAG);
-        // 构造消息request
+        // 1. 构造消息request. 包括requestCode，requestHeader， body
         if (isReply) {
             if (sendSmartMsg) {
                 SendMessageRequestHeaderV2 requestHeaderV2 = SendMessageRequestHeaderV2.createSendMessageRequestHeaderV2(requestHeader);
@@ -473,12 +473,14 @@ public class MQClientAPIImpl {
                 SendMessageRequestHeaderV2 requestHeaderV2 = SendMessageRequestHeaderV2.createSendMessageRequestHeaderV2(requestHeader);
                 request = RemotingCommand.createRequestCommand(msg instanceof MessageBatch ? RequestCode.SEND_BATCH_MESSAGE : RequestCode.SEND_MESSAGE_V2, requestHeaderV2);
             } else {
+                // 普通的消息request
                 request = RemotingCommand.createRequestCommand(RequestCode.SEND_MESSAGE, requestHeader);
             }
         }
         request.setBody(msg.getBody());
 
-        // 对不同的发送模式，调用发送方法
+        // 2. 对不同的发送模式，调用发送方法
+        // 都是调用remotingClient的方法发送消息
         switch (communicationMode) {
             case ONEWAY:
                 this.remotingClient.invokeOneway(addr, request, timeoutMillis);
@@ -534,6 +536,7 @@ public class MQClientAPIImpl {
     ) throws InterruptedException, RemotingException {
         final long beginStartTime = System.currentTimeMillis();
         try {
+            // 重试逻辑在回调函数里
             this.remotingClient.invokeAsync(addr, request, timeoutMillis, new InvokeCallback() {
                 @Override
                 public void operationComplete(ResponseFuture responseFuture) {

@@ -307,6 +307,7 @@ public abstract class NettyRemotingAbstract {
 
     /**
      * Execute callback in callback executor. If callback executor is null, run directly in current thread
+     * 执行回调
      */
     private void executeInvokeCallback(final ResponseFuture responseFuture) {
         boolean runInThisThread = false;
@@ -436,6 +437,7 @@ public abstract class NettyRemotingAbstract {
 
             // 等待返回结果
             RemotingCommand responseCommand = responseFuture.waitResponse(timeoutMillis);
+            // 好像responseCommand一直为null？todo
             if (null == responseCommand) {
                 if (responseFuture.isSendRequestOK()) {
                     throw new RemotingTimeoutException(RemotingHelper.parseSocketAddressAddr(addr), timeoutMillis,
@@ -457,6 +459,7 @@ public abstract class NettyRemotingAbstract {
         throws InterruptedException, RemotingTooMuchRequestException, RemotingTimeoutException, RemotingSendRequestException {
         long beginStartTime = System.currentTimeMillis();
         final int opaque = request.getOpaque();
+        // 通过semaphoreAsync控制异步消息的并发量，默认为65535
         boolean acquired = this.semaphoreAsync.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);
         if (acquired) {
             final SemaphoreReleaseOnlyOnce once = new SemaphoreReleaseOnlyOnce(this.semaphoreAsync);
@@ -511,6 +514,7 @@ public abstract class NettyRemotingAbstract {
             responseFuture.setSendRequestOK(false);
             responseFuture.putResponse(null);
             try {
+                // 执行回调
                 executeInvokeCallback(responseFuture);
             } catch (Throwable e) {
                 log.warn("execute callback in requestFail, and callback throw", e);

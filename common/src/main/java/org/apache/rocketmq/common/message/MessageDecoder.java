@@ -515,6 +515,7 @@ public class MessageDecoder {
         return byteBuffer.array();
     }
 
+    // 从字节数组中解码消息
     public static Message decodeMessage(ByteBuffer byteBuffer) throws Exception {
         Message message = new Message();
 

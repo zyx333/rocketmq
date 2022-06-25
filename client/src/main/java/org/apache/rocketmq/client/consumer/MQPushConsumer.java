@@ -41,13 +41,17 @@ public interface MQPushConsumer extends MQConsumer {
     @Deprecated
     void registerMessageListener(MessageListener messageListener);
 
+    // 注册表发消息监听器
     void registerMessageListener(final MessageListenerConcurrently messageListener);
 
+    // 注册顺序消费事件监听器
     void registerMessageListener(final MessageListenerOrderly messageListener);
 
     /**
+     * 订阅消息
      * Subscribe some topic
      *
+     * subExpression 消息过滤表达式
      * @param subExpression subscription expression.it only support or operation such as "tag1 || tag2 || tag3" <br> if
      * null or * expression,meaning subscribe
      * all
@@ -55,6 +59,7 @@ public interface MQPushConsumer extends MQConsumer {
     void subscribe(final String topic, final String subExpression) throws MQClientException;
 
     /**
+     * 消息订阅，使用类模式过滤消息
      * This method will be removed in the version 5.0.0,because filterServer was removed,and method <code>subscribe(final String topic, final MessageSelector messageSelector)</code>
      * is recommended.
      *
@@ -87,6 +92,7 @@ public interface MQPushConsumer extends MQConsumer {
     void subscribe(final String topic, final MessageSelector selector) throws MQClientException;
 
     /**
+     * 取消订阅
      * Unsubscribe consumption some topic
      *
      * @param topic message topic

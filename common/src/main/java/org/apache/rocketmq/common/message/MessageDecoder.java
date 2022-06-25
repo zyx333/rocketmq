@@ -471,6 +471,7 @@ public class MessageDecoder {
         return map;
     }
 
+    // 按固定的格式存储Messaage
     public static byte[] encodeMessage(Message message) {
         //only need flag, body, properties
         byte[] body = message.getBody();
@@ -545,6 +546,7 @@ public class MessageDecoder {
         return message;
     }
 
+    // 把批量消息聚合成字节数组
     public static byte[] encodeMessages(List<Message> messages) {
         //TO DO refactor, accumulate in one buffer, avoid copies
         List<byte[]> encodedMessages = new ArrayList<byte[]>(messages.size());

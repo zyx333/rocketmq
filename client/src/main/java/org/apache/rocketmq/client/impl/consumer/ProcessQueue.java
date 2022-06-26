@@ -63,7 +63,7 @@ public class ProcessQueue {
     private volatile long queueOffsetMax = 0L;
     // 当前ProcessQueue是否被丢弃
     private volatile boolean dropped = false;
-    // 上一次开始拉去消息的时间戳
+    // 上一次开始拉取消息的时间戳
     private volatile long lastPullTimestamp = System.currentTimeMillis();
     // 上一次消费消息的时间戳
     private volatile long lastConsumeTimestamp = System.currentTimeMillis();

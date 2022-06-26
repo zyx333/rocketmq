@@ -723,6 +723,7 @@ public class MQClientAPIImpl {
         return sendResult;
     }
 
+    // 调用服务端拉取消息
     public PullResult pullMessage(
         final String addr,
         final PullMessageRequestHeader requestHeader,

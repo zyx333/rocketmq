@@ -578,37 +578,42 @@ public class DefaultMessageStore implements MessageStore {
         long beginTime = this.getSystemClock().now();
 
         GetMessageStatus status = GetMessageStatus.NO_MESSAGE_IN_QUEUE;
+        // 待查找队列的偏移量
         long nextBeginOffset = offset;
+        // 当前消息队列的最小偏移量
         long minOffset = 0;
+        // 当前消息队列的最大偏移量
         long maxOffset = 0;
 
         // lazy init when find msg.
         GetMessageResult getResult = null;
 
+        // 当前commitLog文件的最大偏移量
         final long maxOffsetPy = this.commitLog.getMaxOffset();
 
+        // 获取消息队列
         ConsumeQueue consumeQueue = findConsumeQueue(topic, queueId);
         if (consumeQueue != null) {
             minOffset = consumeQueue.getMinOffsetInQueue();
             maxOffset = consumeQueue.getMaxOffsetInQueue();
-
-            if (maxOffset == 0) {
+            // 偏移量异常时对下一次的拉取偏移量进行校正
+            if (maxOffset == 0) { // 表示当前队列中没有消息
                 status = GetMessageStatus.NO_MESSAGE_IN_QUEUE;
                 nextBeginOffset = nextOffsetCorrection(offset, 0);
-            } else if (offset < minOffset) {
+            } else if (offset < minOffset) { // 待拉取消息偏移量小于队列的起始偏移量
                 status = GetMessageStatus.OFFSET_TOO_SMALL;
                 nextBeginOffset = nextOffsetCorrection(offset, minOffset);
-            } else if (offset == maxOffset) {
+            } else if (offset == maxOffset) { // 待拉取消息偏移量等于队列的最大偏移量
                 status = GetMessageStatus.OFFSET_OVERFLOW_ONE;
                 nextBeginOffset = nextOffsetCorrection(offset, offset);
-            } else if (offset > maxOffset) {
+            } else if (offset > maxOffset) { // 偏移量越界
                 status = GetMessageStatus.OFFSET_OVERFLOW_BADLY;
                 if (0 == minOffset) {
                     nextBeginOffset = nextOffsetCorrection(offset, minOffset);
                 } else {
                     nextBeginOffset = nextOffsetCorrection(offset, maxOffset);
                 }
-            } else {
+            } else { // offset >= minOffset && offset < maxOffset,即偏移量处于正常区间时
                 SelectMappedBufferResult bufferConsumeQueue = consumeQueue.getIndexBuffer(offset);
                 if (bufferConsumeQueue != null) {
                     try {

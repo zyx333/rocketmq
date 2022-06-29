@@ -478,6 +478,7 @@ public class NettyRemotingClient extends NettyRemotingAbstract implements Remoti
         if (this.lockChannelTables.tryLock(LOCK_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
             try {
                 boolean createNewConnection;
+                // 双重检查
                 cw = this.channelTables.get(addr);
                 if (cw != null) {
 

@@ -95,7 +95,7 @@ public class NamesrvController {
         // 用来处理netty server收到的请求
         this.registerProcessor();
 
-        // 扫描不活跃的broker。 每10s执行一次
+        // 扫描不活跃的broker并移除。 每10s执行一次
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override

@@ -437,7 +437,7 @@ public abstract class NettyRemotingAbstract {
 
             // 等待返回结果
             RemotingCommand responseCommand = responseFuture.waitResponse(timeoutMillis);
-            // 好像responseCommand一直为null？todo
+            // 收到响应后，在NettyRemotingClient.NettyClientHandler里会调用putResponse设置响应
             if (null == responseCommand) {
                 if (responseFuture.isSendRequestOK()) {
                     throw new RemotingTimeoutException(RemotingHelper.parseSocketAddressAddr(addr), timeoutMillis,

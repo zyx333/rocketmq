@@ -251,7 +251,7 @@ public class MQClientInstance {
                     // 启动pullMessageService
                     this.pullMessageService.start();
                     // Start rebalance service
-                    // 启动rebalanceService
+                    // 启动rebalanceService消息负载线程
                     this.rebalanceService.start();
                     // Start push service
                     // 启动消息发送

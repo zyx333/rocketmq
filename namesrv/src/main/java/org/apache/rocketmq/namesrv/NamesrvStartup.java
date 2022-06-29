@@ -79,7 +79,9 @@ public class NamesrvStartup {
             return null;
         }
 
+        // namesrv业务参数
         final NamesrvConfig namesrvConfig = new NamesrvConfig();
+        // nameserver网络参数
         final NettyServerConfig nettyServerConfig = new NettyServerConfig();
         nettyServerConfig.setListenPort(9876);
         if (commandLine.hasOption('c')) {

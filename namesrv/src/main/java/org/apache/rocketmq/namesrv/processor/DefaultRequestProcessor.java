@@ -355,6 +355,7 @@ public class DefaultRequestProcessor extends AsyncNettyRequestProcessor implemen
         return response;
     }
 
+    // namesrv路由发现的实现
     public RemotingCommand getRouteInfoByTopic(ChannelHandlerContext ctx,
         RemotingCommand request) throws RemotingCommandException {
         final RemotingCommand response = RemotingCommand.createResponseCommand(null);

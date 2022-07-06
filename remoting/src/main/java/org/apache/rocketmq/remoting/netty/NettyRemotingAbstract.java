@@ -475,6 +475,7 @@ public abstract class NettyRemotingAbstract {
             try {
                 // 发送消息
                 channel.writeAndFlush(request).addListener(new ChannelFutureListener() {
+                    // 异步监听io操作的完成状态，在io完成之后执行
                     @Override
                     public void operationComplete(ChannelFuture f) throws Exception {
                         if (f.isSuccess()) {

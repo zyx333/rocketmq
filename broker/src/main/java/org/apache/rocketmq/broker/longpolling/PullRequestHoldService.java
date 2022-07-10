@@ -52,6 +52,7 @@ public class PullRequestHoldService extends ServiceThread {
             }
         }
 
+        // 把拉取请求放到pullRequestTable，等待重新执行
         mpr.addPullRequest(pullRequest);
     }
 
@@ -105,6 +106,7 @@ public class PullRequestHoldService extends ServiceThread {
                 // 获取消息消费队列的最大偏移量
                 final long offset = this.brokerController.getMessageStore().getMaxOffsetInQueue(topic, queueId);
                 try {
+                    // 通知有新消息到达
                     this.notifyMessageArriving(topic, queueId, offset);
                 } catch (Throwable e) {
                     log.error("check hold request failed. topic={}, queueId={}", topic, queueId, e);
@@ -154,6 +156,7 @@ public class PullRequestHoldService extends ServiceThread {
                         }
                     }
 
+                    // 挂起超时的情况
                     if (System.currentTimeMillis() >= (request.getSuspendTimestamp() + request.getTimeoutMillis())) {
                         try {
                             this.brokerController.getPullMessageProcessor().executeRequestWhenWakeup(request.getClientChannel(),
@@ -167,6 +170,7 @@ public class PullRequestHoldService extends ServiceThread {
                     replayList.add(request);
                 }
 
+                // 下一次继续尝试
                 if (!replayList.isEmpty()) {
                     mpr.addPullRequest(replayList);
                 }

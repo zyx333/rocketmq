@@ -135,6 +135,8 @@ public abstract class NettyRemotingAbstract {
     }
 
     /**
+     * 处理inbound数据。
+     * 对于server，处理客户端发送来的请求；对于client，处理server返回的响应
      * Entry of incoming command processing.
      *
      * <p>

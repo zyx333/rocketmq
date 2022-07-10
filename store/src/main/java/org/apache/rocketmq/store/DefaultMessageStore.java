@@ -2062,6 +2062,8 @@ public class DefaultMessageStore implements MessageStore {
                                 if (size > 0) {
                                     DefaultMessageStore.this.doDispatch(dispatchRequest);
 
+                                    // 主节点且开启长轮询，则唤起挂起线程通知消息到达
+                                    // 这里的逻辑是实现消息准实时拉取的关键！！！
                                     if (BrokerRole.SLAVE != DefaultMessageStore.this.getMessageStoreConfig().getBrokerRole()
                                             && DefaultMessageStore.this.brokerConfig.isLongPollingEnable()
                                             && DefaultMessageStore.this.messageArrivingListener != null) {

@@ -65,6 +65,7 @@ public interface OffsetStore {
     Map<MessageQueue, Long> cloneOffsetTable(String topic);
 
     /**
+     * 集群模式更新存储在broker端的消息消费进度
      * @param mq
      * @param offset
      * @param isOneway

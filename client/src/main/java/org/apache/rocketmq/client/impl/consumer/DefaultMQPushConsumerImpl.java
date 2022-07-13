@@ -279,7 +279,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
         } else {
             // 顺序消息消费需要加锁
             if (processQueue.isLocked()) {
-                if (!pullRequest.isPreviouslyLocked()) { // todo
+                if (!pullRequest.isPreviouslyLocked()) { // 表示第一次拉取任务，需要先计算拉取偏移量
                     long offset = -1L;
                     try {
                         // 计算消费位置
@@ -301,6 +301,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                     pullRequest.setNextOffset(offset);
                 }
             } else {
+                // 未被锁定时，延迟3s后再将pullRequest放入拉取任务
                 this.executePullRequestLater(pullRequest, pullTimeDelayMillsWhenException);
                 log.info("pull message later because not locked in broker, {}", pullRequest);
                 return;

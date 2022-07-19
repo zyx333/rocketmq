@@ -197,6 +197,7 @@ public class MappedFileQueue {
         return 0;
     }
 
+    // 根据偏移量创建CommitLog文件
     public MappedFile getLastMappedFile(final long startOffset, boolean needCreate) {
         long createOffset = -1;
         MappedFile mappedFileLast = getLastMappedFile();

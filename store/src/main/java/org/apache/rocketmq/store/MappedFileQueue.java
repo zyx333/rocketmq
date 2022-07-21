@@ -36,15 +36,21 @@ public class MappedFileQueue {
 
     private static final int DELETE_FILES_BATCH_MAX = 10;
 
+    // 存储目录
     private final String storePath;
 
+    // 单个文件的大小
     protected final int mappedFileSize;
 
+    // MappedFile 集合
     protected final CopyOnWriteArrayList<MappedFile> mappedFiles = new CopyOnWriteArrayList<MappedFile>();
 
+    // 创建MappedFile的服务类
     private final AllocateMappedFileService allocateMappedFileService;
 
+    // 当前刷盘指针
     protected long flushedWhere = 0;
+    // 当前数据提交指针，该值 >=flushedWhere
     private long committedWhere = 0;
 
     private volatile long storeTimestamp = 0;
@@ -75,12 +81,15 @@ public class MappedFileQueue {
         }
     }
 
+    // 根据消息存储时间戳查找MappedFile。
     public MappedFile getMappedFileByTime(final long timestamp) {
         Object[] mfs = this.copyMappedFiles(0);
 
         if (null == mfs)
             return null;
 
+        // 按顺序遍历，返回第一个最后更新时间大于查找时间的MappedFile。
+        // 不存在，则返回最后一个MappedFile。
         for (int i = 0; i < mfs.length; i++) {
             MappedFile mappedFile = (MappedFile) mfs[i];
             if (mappedFile.getLastModifiedTimestamp() >= timestamp) {
@@ -302,6 +311,7 @@ public class MappedFileQueue {
 
     public long getMinOffset() {
 
+        // 最小偏移量为第一个文件的起始偏移量
         if (!this.mappedFiles.isEmpty()) {
             try {
                 return this.mappedFiles.get(0).getFileFromOffset();
@@ -316,6 +326,7 @@ public class MappedFileQueue {
 
     public long getMaxOffset() {
         MappedFile mappedFile = getLastMappedFile();
+        // 最大偏移量为最后一个文件的起始偏移量 + 当前已写入合法数据的偏移量
         if (mappedFile != null) {
             return mappedFile.getFileFromOffset() + mappedFile.getReadPosition();
         }
@@ -468,6 +479,7 @@ public class MappedFileQueue {
     }
 
     /**
+     * 根据消息偏移量查找MappedFile
      * Finds a mapped file by offset.
      *
      * @param offset Offset.
@@ -487,6 +499,7 @@ public class MappedFileQueue {
                         this.mappedFileSize,
                         this.mappedFiles.size());
                 } else {
+                    // 计算offset在第几个文件
                     int index = (int) ((offset / this.mappedFileSize) - (firstMappedFile.getFileFromOffset() / this.mappedFileSize));
                     MappedFile targetFile = null;
                     try {
@@ -499,6 +512,7 @@ public class MappedFileQueue {
                         return targetFile;
                     }
 
+                    // 如果前面的算法没有确定MappedFile，则遍历列表
                     for (MappedFile tmpMappedFile : this.mappedFiles) {
                         if (offset >= tmpMappedFile.getFileFromOffset()
                             && offset < tmpMappedFile.getFileFromOffset() + this.mappedFileSize) {

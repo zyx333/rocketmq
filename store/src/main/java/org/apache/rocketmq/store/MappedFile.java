@@ -42,28 +42,44 @@ import org.apache.rocketmq.store.config.FlushDiskType;
 import org.apache.rocketmq.store.util.LibC;
 import sun.nio.ch.DirectBuffer;
 
+// 内存映射文件的实现
 public class MappedFile extends ReferenceResource {
+    // 操作系统每页大小，默认4k
     public static final int OS_PAGE_SIZE = 1024 * 4;
     protected static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    // 当前jvm实例中MappedFile的虚拟内存
     private static final AtomicLong TOTAL_MAPPED_VIRTUAL_MEMORY = new AtomicLong(0);
 
+    // 当前jvm实例中MappedFile对象的个数
     private static final AtomicInteger TOTAL_MAPPED_FILES = new AtomicInteger(0);
+    // 当前文件的写指针
     protected final AtomicInteger wrotePosition = new AtomicInteger(0);
+    //当前文件的提交指针
     protected final AtomicInteger committedPosition = new AtomicInteger(0);
+    // 数据持久化的指针。该指针之前的数据都已经持久化到磁盘
     private final AtomicInteger flushedPosition = new AtomicInteger(0);
+    // 文件大小
     protected int fileSize;
     protected FileChannel fileChannel;
     /**
+     * 堆外内存ByteBuffer
      * Message will put to here first, and then reput to FileChannel if writeBuffer is not null.
      */
     protected ByteBuffer writeBuffer = null;
+    // 对外内存池
     protected TransientStorePool transientStorePool = null;
+    // 文件名
     private String fileName;
+    // 该文件的初始偏移量
     private long fileFromOffset;
+    // 物理文件
     private File file;
+    // 物理文件对应的内存映射buffer
     private MappedByteBuffer mappedByteBuffer;
+    //文件最后一次写入内容的时间
     private volatile long storeTimestamp = 0;
+    // 是否是MappedFileQueue队列中的第一个文件
     private boolean firstCreateInQueue = false;
 
     public MappedFile() {
@@ -160,6 +176,7 @@ public class MappedFile extends ReferenceResource {
 
         try {
             this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
+            // 内存映射
             this.mappedByteBuffer = this.fileChannel.map(MapMode.READ_WRITE, 0, fileSize);
             TOTAL_MAPPED_VIRTUAL_MEMORY.addAndGet(fileSize);
             TOTAL_MAPPED_FILES.incrementAndGet();

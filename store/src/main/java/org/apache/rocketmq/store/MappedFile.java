@@ -169,6 +169,7 @@ public class MappedFile extends ReferenceResource {
         this.fileName = fileName;
         this.fileSize = fileSize;
         this.file = new File(fileName);
+        // 其实偏移量为文件名
         this.fileFromOffset = Long.parseLong(this.file.getName());
         boolean ok = false;
 
@@ -292,6 +293,7 @@ public class MappedFile extends ReferenceResource {
     }
 
     /**
+     * 将内存数据写入磁盘
      * @return The current flushed position
      */
     public int flush(final int flushLeastPages) {
@@ -310,6 +312,7 @@ public class MappedFile extends ReferenceResource {
                     log.error("Error occurred when force data to disk.", e);
                 }
 
+                // 更新flush位置
                 this.flushedPosition.set(value);
                 this.release();
             } else {
@@ -320,6 +323,7 @@ public class MappedFile extends ReferenceResource {
         return this.getFlushedPosition();
     }
 
+    // 脏页提交
     public int commit(final int commitLeastPages) {
         if (writeBuffer == null) {
             //no need to commit data to file channel, so just regard wrotePosition as committedPosition.
@@ -327,6 +331,7 @@ public class MappedFile extends ReferenceResource {
         }
         if (this.isAbleToCommit(commitLeastPages)) {
             if (this.hold()) {
+                // 提交的逻辑
                 commit0();
                 this.release();
             } else {
@@ -354,6 +359,7 @@ public class MappedFile extends ReferenceResource {
                 byteBuffer.limit(writePos);
                 this.fileChannel.position(lastCommittedPosition);
                 this.fileChannel.write(byteBuffer);
+                // 更新commitPosition
                 this.committedPosition.set(writePos);
             } catch (Throwable e) {
                 log.error("Error occurred when commit data to FileChannel.", e);
@@ -462,6 +468,7 @@ public class MappedFile extends ReferenceResource {
     }
 
     public boolean destroy(final long intervalForcibly) {
+        // 关闭mappedFile
         this.shutdown(intervalForcibly);
 
         if (this.isCleanupOver()) {

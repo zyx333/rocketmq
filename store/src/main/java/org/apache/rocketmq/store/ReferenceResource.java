@@ -58,6 +58,7 @@ public abstract class ReferenceResource {
         if (value > 0)
             return;
 
+        // 引用次数小于等于0时才会释放资源
         synchronized (this) {
 
             this.cleanupOver = this.cleanup(value);

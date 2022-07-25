@@ -923,7 +923,7 @@ public class CommitLog {
             if (mappedFile.isAvailable()) {
                 return mappedFile.getFileFromOffset();
             } else {
-                // 下一个文件的其实偏移量
+                // 下一个文件的起始偏移量
                 return this.rollNextFile(mappedFile.getFileFromOffset());
             }
         }

@@ -165,6 +165,7 @@ public class MappedFile extends ReferenceResource {
         this.transientStorePool = transientStorePool;
     }
 
+    // 初始化文件信息
     private void init(final String fileName, final int fileSize) throws IOException {
         this.fileName = fileName;
         this.fileSize = fileSize;
@@ -325,6 +326,7 @@ public class MappedFile extends ReferenceResource {
 
     // 脏页提交
     public int commit(final int commitLeastPages) {
+        // writeBuffer为空时，不需要执行提交操作
         if (writeBuffer == null) {
             //no need to commit data to file channel, so just regard wrotePosition as committedPosition.
             return this.wrotePosition.get();

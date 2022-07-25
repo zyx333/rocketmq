@@ -137,7 +137,7 @@ public class IndexFile {
                 // 保存当前哈希槽的值
                 this.mappedByteBuffer.putInt(absIndexPos + 4 + 8 + 4, slotValue);
 
-                // 保存当前文件中包含的条目数量
+                // 保存该位置哈希码对应的最新index条目的索引
                 this.mappedByteBuffer.putInt(absSlotPos, this.indexHeader.getIndexCount());
 
                 // 更新文件索引头信息

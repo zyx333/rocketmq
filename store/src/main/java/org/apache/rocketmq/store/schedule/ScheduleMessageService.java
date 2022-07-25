@@ -52,11 +52,15 @@ import org.apache.rocketmq.store.PutMessageStatus;
 import org.apache.rocketmq.store.SelectMappedBufferResult;
 import org.apache.rocketmq.store.config.StorePathConfigHelper;
 
+// 定时消息实现类
 public class ScheduleMessageService extends ConfigManager {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
+    // 第一次调度时延迟的时间
     private static final long FIRST_DELAY_TIME = 1000L;
+    // 每个延时级别调度一次后，等待该时间间隔后再放入调度池
     private static final long DELAY_FOR_A_WHILE = 100L;
+    // 消息发送异常时，延迟该时间后再参与调度
     private static final long DELAY_FOR_A_PERIOD = 10000L;
     private static final long WAIT_FOR_SHUTDOWN = 5000L;
     private static final long DELAY_FOR_A_SLEEP = 10L;
@@ -64,12 +68,14 @@ public class ScheduleMessageService extends ConfigManager {
     private final ConcurrentMap<Integer /* level */, Long/* delay timeMillis */> delayLevelTable =
         new ConcurrentHashMap<Integer, Long>(32);
 
+    // 各延迟级别消息消费进度
     private final ConcurrentMap<Integer /* level */, Long/* offset */> offsetTable =
         new ConcurrentHashMap<Integer, Long>(32);
     private final DefaultMessageStore defaultMessageStore;
     private final AtomicBoolean started = new AtomicBoolean(false);
     private ScheduledExecutorService deliverExecutorService;
     private MessageStore writeMessageStore;
+    //最大消息延迟级别
     private int maxDelayLevel;
     private boolean enableAsyncDeliver = false;
     private ScheduledExecutorService handleExecutorService;
@@ -210,7 +216,9 @@ public class ScheduleMessageService extends ConfigManager {
     @Override
     public boolean load() {
         boolean result = super.load();
+        // 解析延迟级别并放到map
         result = result && this.parseDelayLevel();
+        // 加载消息消费进度
         result = result && this.correctDelayOffset();
         return result;
     }

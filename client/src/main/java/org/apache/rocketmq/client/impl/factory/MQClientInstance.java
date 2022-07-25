@@ -251,7 +251,7 @@ public class MQClientInstance {
                     // 启动pullMessageService
                     this.pullMessageService.start();
                     // Start rebalance service
-                    // 启动rebalanceService
+                    // 启动rebalanceService消息负载线程
                     this.rebalanceService.start();
                     // Start push service
                     // 启动消息发送
@@ -983,6 +983,7 @@ public class MQClientInstance {
     }
 
     public void doRebalance() {
+        // 遍历注册的消费者，执行Rebalance操作
         for (Map.Entry<String, MQConsumerInner> entry : this.consumerTable.entrySet()) {
             MQConsumerInner impl = entry.getValue();
             if (impl != null) {

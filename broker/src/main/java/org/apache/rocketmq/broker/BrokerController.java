@@ -793,6 +793,7 @@ public class BrokerController {
         } catch (InterruptedException e) {
         }
 
+        // broker关闭时，取消注册broker。向namesrv发送UNREGISTER_BROKER命令
         this.unregisterBrokerAll();
 
         if (this.sendMessageExecutor != null) {
@@ -908,6 +909,7 @@ public class BrokerController {
             this.registerBrokerAll(true, false, true);
         }
 
+        // 定时像namesrv发送心跳包
         this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
 
             @Override

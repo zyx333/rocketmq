@@ -279,7 +279,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
         } else {
             // 顺序消息消费需要加锁
             if (processQueue.isLocked()) {
-                if (!pullRequest.isPreviouslyLocked()) { // todo
+                if (!pullRequest.isPreviouslyLocked()) { // 表示第一次拉取任务，需要先计算拉取偏移量
                     long offset = -1L;
                     try {
                         // 计算消费位置
@@ -301,6 +301,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                     pullRequest.setNextOffset(offset);
                 }
             } else {
+                // 未被锁定时，延迟3s后再将pullRequest放入拉取任务
                 this.executePullRequestLater(pullRequest, pullTimeDelayMillsWhenException);
                 log.info("pull message later because not locked in broker, {}", pullRequest);
                 return;
@@ -341,13 +342,16 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                                 DefaultMQPushConsumerImpl.this.getConsumerStatsManager().incPullTPS(pullRequest.getConsumerGroup(),
                                     pullRequest.getMessageQueue().getTopic(), pullResult.getMsgFoundList().size());
 
+                                // 把消息放到处理队列processQueue中
                                 boolean dispatchToConsume = processQueue.putMessage(pullResult.getMsgFoundList());
+                                // 将消息提交到consumeMessageService中进行消费. 异步执行，提交消息到消费线程后立即返回
                                 DefaultMQPushConsumerImpl.this.consumeMessageService.submitConsumeRequest(
                                     pullResult.getMsgFoundList(),
                                     processQueue,
                                     pullRequest.getMessageQueue(),
                                     dispatchToConsume);
 
+                                // 继续将pullRequest放入拉取队列中，以持续拉取消息
                                 if (DefaultMQPushConsumerImpl.this.defaultMQPushConsumer.getPullInterval() > 0) {
                                     DefaultMQPushConsumerImpl.this.executePullRequestLater(pullRequest,
                                         DefaultMQPushConsumerImpl.this.defaultMQPushConsumer.getPullInterval());

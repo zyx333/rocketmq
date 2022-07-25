@@ -79,7 +79,9 @@ public class NamesrvStartup {
             return null;
         }
 
+        // namesrv业务参数
         final NamesrvConfig namesrvConfig = new NamesrvConfig();
+        // nameserver网络参数
         final NettyServerConfig nettyServerConfig = new NettyServerConfig();
         nettyServerConfig.setListenPort(9876);
         if (commandLine.hasOption('c')) {
@@ -143,6 +145,7 @@ public class NamesrvStartup {
             System.exit(-3);
         }
 
+        // 注册shutdown hook
         Runtime.getRuntime().addShutdownHook(new ShutdownHookThread(log, new Callable<Void>() {
             @Override
             public Void call() throws Exception {

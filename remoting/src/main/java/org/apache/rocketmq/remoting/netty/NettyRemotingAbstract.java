@@ -135,6 +135,8 @@ public abstract class NettyRemotingAbstract {
     }
 
     /**
+     * 处理inbound数据。
+     * 对于server，处理客户端发送来的请求；对于client，处理server返回的响应
      * Entry of incoming command processing.
      *
      * <p>
@@ -437,7 +439,7 @@ public abstract class NettyRemotingAbstract {
 
             // 等待返回结果
             RemotingCommand responseCommand = responseFuture.waitResponse(timeoutMillis);
-            // 好像responseCommand一直为null？todo
+            // 收到响应后，在NettyRemotingClient.NettyClientHandler里会调用putResponse设置响应
             if (null == responseCommand) {
                 if (responseFuture.isSendRequestOK()) {
                     throw new RemotingTimeoutException(RemotingHelper.parseSocketAddressAddr(addr), timeoutMillis,
@@ -475,6 +477,7 @@ public abstract class NettyRemotingAbstract {
             try {
                 // 发送消息
                 channel.writeAndFlush(request).addListener(new ChannelFutureListener() {
+                    // 异步监听io操作的完成状态，在io完成之后执行
                     @Override
                     public void operationComplete(ChannelFuture f) throws Exception {
                         if (f.isSuccess()) {

@@ -35,6 +35,7 @@ public class IndexHeader {
     private AtomicLong endPhyOffset = new AtomicLong(0);
     private AtomicInteger hashSlotCount = new AtomicInteger(0);
 
+    // index条目的数量
     private AtomicInteger indexCount = new AtomicInteger(1);
 
     public IndexHeader(final ByteBuffer byteBuffer) {

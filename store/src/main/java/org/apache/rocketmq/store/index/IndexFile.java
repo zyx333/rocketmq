@@ -32,7 +32,9 @@ public class IndexFile {
     private static int hashSlotSize = 4;
     private static int indexSize = 20;
     private static int invalidIndex = 0;
+    // 哈希槽的数目
     private final int hashSlotNum;
+    // 最大允许的index条目
     private final int indexNum;
     private final MappedFile mappedFile;
     private final FileChannel fileChannel;
@@ -91,8 +93,11 @@ public class IndexFile {
 
     public boolean putKey(final String key, final long phyOffset, final long storeTimestamp) {
         if (this.indexHeader.getIndexCount() < this.indexNum) {
+            // 计算哈希值
             int keyHash = indexKeyHashMethod(key);
+            // 对哈希槽数目取余
             int slotPos = keyHash % this.hashSlotNum;
+            // 哈希槽的物理地址
             int absSlotPos = IndexHeader.INDEX_HEADER_SIZE + slotPos * hashSlotSize;
 
             FileLock fileLock = null;
@@ -122,13 +127,20 @@ public class IndexFile {
                     IndexHeader.INDEX_HEADER_SIZE + this.hashSlotNum * hashSlotSize
                         + this.indexHeader.getIndexCount() * indexSize;
 
+                // 保存index条目信息
+                // 保存hash码
                 this.mappedByteBuffer.putInt(absIndexPos, keyHash);
+                // 保存消息物理偏移量
                 this.mappedByteBuffer.putLong(absIndexPos + 4, phyOffset);
+                // 保存时间差
                 this.mappedByteBuffer.putInt(absIndexPos + 4 + 8, (int) timeDiff);
+                // 保存当前哈希槽的值
                 this.mappedByteBuffer.putInt(absIndexPos + 4 + 8 + 4, slotValue);
 
+                // 保存该位置哈希码对应的最新index条目的索引
                 this.mappedByteBuffer.putInt(absSlotPos, this.indexHeader.getIndexCount());
 
+                // 更新文件索引头信息
                 if (this.indexHeader.getIndexCount() <= 1) {
                     this.indexHeader.setBeginPhyOffset(phyOffset);
                     this.indexHeader.setBeginTimestamp(storeTimestamp);
@@ -188,6 +200,15 @@ public class IndexFile {
         return result;
     }
 
+    /**
+     * 根据key查找消息
+     * @param phyOffsets 消息物理偏移量
+     * @param key 索引key
+     * @param maxNum 本次查找最大消息数
+     * @param begin 开始时间戳
+     * @param end 结束时间戳
+     * @param lock
+     */
     public void selectPhyOffset(final List<Long> phyOffsets, final String key, final int maxNum,
         final long begin, final long end, boolean lock) {
         if (this.mappedFile.hold()) {
@@ -210,6 +231,7 @@ public class IndexFile {
 
                 if (slotValue <= invalidIndex || slotValue > this.indexHeader.getIndexCount()
                     || this.indexHeader.getIndexCount() <= 1) {
+                    // 没有对应的条目
                 } else {
                     for (int nextIndexToRead = slotValue; ; ) {
                         if (phyOffsets.size() >= maxNum) {

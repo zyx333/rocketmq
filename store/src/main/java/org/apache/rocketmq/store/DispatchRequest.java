@@ -22,7 +22,7 @@ public class DispatchRequest {
     private final String topic;
     private final int queueId;
     private final long commitLogOffset;
-    private int msgSize;
+    private int msgSize; // 消息长度
     private final long tagsCode;
     private final long storeTimestamp;
     private final long consumeQueueOffset;

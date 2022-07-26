@@ -490,6 +490,7 @@ public class ConsumeQueue {
             return true;
         }
 
+        // 更新bytebuffer
         this.byteBufferIndex.flip();
         this.byteBufferIndex.limit(CQ_STORE_UNIT_SIZE);
         this.byteBufferIndex.putLong(offset);

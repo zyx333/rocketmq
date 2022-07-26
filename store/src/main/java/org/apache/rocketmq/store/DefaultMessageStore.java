@@ -2018,8 +2018,9 @@ public class DefaultMessageStore implements MessageStore {
         }
     }
 
+    // 转发CommitLog更新事件，用于更新ConsumeQueue和Index文件
     class ReputMessageService extends ServiceThread {
-
+        // 表示从哪个偏移量开始转发消息给ConsumeQueue和Index
         private volatile long reputFromOffset = 0;
 
         public long getReputFromOffset() {
@@ -2068,6 +2069,7 @@ public class DefaultMessageStore implements MessageStore {
                     break;
                 }
 
+                // 从reputFromOffset开始读取CommitLog的有效数据
                 SelectMappedBufferResult result = DefaultMessageStore.this.commitLog.getData(reputFromOffset);
                 if (result != null) {
                     try {
@@ -2169,6 +2171,7 @@ public class DefaultMessageStore implements MessageStore {
             while (!this.isStopped()) {
                 try {
                     Thread.sleep(1);
+                    // 转发消息
                     this.doReput();
                 } catch (Exception e) {
                     DefaultMessageStore.log.warn(this.getServiceName() + " service has exception. ", e);

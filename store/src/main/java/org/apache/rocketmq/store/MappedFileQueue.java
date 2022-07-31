@@ -166,6 +166,7 @@ public class MappedFileQueue {
 
     public boolean doLoad(List<File> files) {
         // ascending order
+        // 根据文件名排序
         files.sort(Comparator.comparing(File::getName));
 
         for (File file : files) {

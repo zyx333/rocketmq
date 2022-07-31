@@ -71,6 +71,7 @@ public class MessageStoreConfig {
     // Resource reclaim interval
     private int cleanResourceInterval = 10000;
     // CommitLog removal interval
+    // 删除物理文件的间隔。一次删除多个文件时间隔的时间
     private int deleteCommitLogFilesInterval = 100;
     // ConsumeQueue removal interval
     private int deleteConsumeQueueFilesInterval = 100;

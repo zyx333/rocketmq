@@ -238,6 +238,7 @@ public class IndexFile {
                             break;
                         }
 
+                        // index条目的位置
                         int absIndexPos =
                             IndexHeader.INDEX_HEADER_SIZE + this.hashSlotNum * hashSlotSize
                                 + nextIndexToRead * indexSize;
@@ -252,11 +253,13 @@ public class IndexFile {
                             break;
                         }
 
+                        // 转化成ms
                         timeDiff *= 1000L;
 
                         long timeRead = this.indexHeader.getBeginTimestamp() + timeDiff;
                         boolean timeMatched = (timeRead >= begin) && (timeRead <= end);
 
+                        // 哈希值相等且时间范围匹配
                         if (keyHash == keyHashRead && timeMatched) {
                             phyOffsets.add(phyOffsetRead);
                         }
@@ -267,6 +270,7 @@ public class IndexFile {
                             break;
                         }
 
+                        // 取链表的上一个节点，重复前面的判断
                         nextIndexToRead = prevIndexRead;
                     }
                 }

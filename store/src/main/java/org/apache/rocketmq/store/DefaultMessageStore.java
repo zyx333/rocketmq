@@ -2082,6 +2082,7 @@ public class DefaultMessageStore implements MessageStore {
 
                             if (dispatchRequest.isSuccess()) {
                                 if (size > 0) {
+                                    // 发送消息 todo： 明天从这看
                                     DefaultMessageStore.this.doDispatch(dispatchRequest);
 
                                     // 主节点且开启长轮询，则唤起挂起线程通知消息到达

@@ -27,6 +27,7 @@ public class DispatchRequest {
     private final long storeTimestamp;
     private final long consumeQueueOffset;
     private final String keys;
+    // 是否成功解析到完整消息
     private final boolean success;
     private final String uniqKey;
 

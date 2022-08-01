@@ -161,6 +161,8 @@ public class MappedFile extends ReferenceResource {
     public void init(final String fileName, final int fileSize,
         final TransientStorePool transientStorePool) throws IOException {
         init(fileName, fileSize);
+        // transientStorePoolEnable为TRUE时，才会初始化writeBuffer。
+        // 此种情况，内容会先存储到堆外内存
         this.writeBuffer = transientStorePool.borrowBuffer();
         this.transientStorePool = transientStorePool;
     }
@@ -327,10 +329,12 @@ public class MappedFile extends ReferenceResource {
     // 脏页提交
     public int commit(final int commitLeastPages) {
         // writeBuffer为空时，不需要执行提交操作
+        // writeBuffer为null说明transientStorePoolEnable为false，不需要执行commit操作
         if (writeBuffer == null) {
             //no need to commit data to file channel, so just regard wrotePosition as committedPosition.
             return this.wrotePosition.get();
         }
+        // 判断是否满足提交的条件
         if (this.isAbleToCommit(commitLeastPages)) {
             if (this.hold()) {
                 // 提交的逻辑
@@ -350,12 +354,14 @@ public class MappedFile extends ReferenceResource {
         return this.committedPosition.get();
     }
 
+    // 将writeBuffer中的数据提交到fileChannel中
     protected void commit0() {
         int writePos = this.wrotePosition.get();
         int lastCommittedPosition = this.committedPosition.get();
 
         if (writePos - lastCommittedPosition > 0) {
             try {
+                // 先创建共享缓冲区
                 ByteBuffer byteBuffer = writeBuffer.slice();
                 byteBuffer.position(lastCommittedPosition);
                 byteBuffer.limit(writePos);
@@ -388,6 +394,7 @@ public class MappedFile extends ReferenceResource {
         int flush = this.committedPosition.get();
         int write = this.wrotePosition.get();
 
+        // 文件已满则返回true
         if (this.isFull()) {
             return true;
         }

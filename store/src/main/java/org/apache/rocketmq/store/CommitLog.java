@@ -281,6 +281,7 @@ public class CommitLog {
     }
 
     /**
+     * 校验消息格式
      * check the message and returns the message size
      *
      * @return 0 Come the end of the file // >0 Normal messages // -1 Message checksum failure

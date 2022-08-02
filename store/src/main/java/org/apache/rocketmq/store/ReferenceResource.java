@@ -47,6 +47,7 @@ public abstract class ReferenceResource {
             this.release();
         } else if (this.getRefCount() > 0) {
             if ((System.currentTimeMillis() - this.firstShutdownTimestamp) >= intervalForcibly) {
+                // 这里设置新值的逻辑是什么? todo
                 this.refCount.set(-1000 - this.getRefCount());
                 this.release();
             }

@@ -34,6 +34,7 @@ public class TransientStorePool {
 
     // availableBuffer的个数
     private final int poolSize;
+    // 每个ByteBuffer的大小
     private final int fileSize;
     private final Deque<ByteBuffer> availableBuffers;
     private final MessageStoreConfig storeConfig;
@@ -55,6 +56,7 @@ public class TransientStorePool {
 
             final long address = ((DirectBuffer) byteBuffer).address();
             Pointer pointer = new Pointer(address);
+            //锁定内存，避免被置换到磁盘中，以提高性能
             LibC.INSTANCE.mlock(pointer, new NativeLong(fileSize));
 
             availableBuffers.offer(byteBuffer);

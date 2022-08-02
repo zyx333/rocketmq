@@ -309,6 +309,7 @@ public class MappedFile extends ReferenceResource {
                     if (writeBuffer != null || this.fileChannel.position() != 0) {
                         this.fileChannel.force(false);
                     } else {
+                        // writeBuffer为空时说明数据是直接写入mappedByteBuffer的
                         this.mappedByteBuffer.force();
                     }
                 } catch (Throwable e) {
@@ -482,10 +483,12 @@ public class MappedFile extends ReferenceResource {
 
         if (this.isCleanupOver()) {
             try {
+                // 关闭fileChannel
                 this.fileChannel.close();
                 log.info("close file channel " + this.fileName + " OK");
 
                 long beginTime = System.currentTimeMillis();
+                // 删除文件
                 boolean result = this.file.delete();
                 log.info("delete file[REF:" + this.getRefCount() + "] " + this.fileName
                     + (result ? " OK, " : " Failed, ") + "W:" + this.getWrotePosition() + " M:"
@@ -513,6 +516,7 @@ public class MappedFile extends ReferenceResource {
     }
 
     /**
+     * 获取最大可读指针
      * @return The max position which have valid data
      */
     public int getReadPosition() {

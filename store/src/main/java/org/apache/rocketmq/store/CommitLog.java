@@ -948,6 +948,7 @@ public class CommitLog {
         if (mappedFile != null) {
             // 计算文件内的偏移量
             int pos = (int) (offset % mappedFileSize);
+            // 从偏移量根据消息长度读取消息内容
             return mappedFile.selectMappedBuffer(pos, size);
         }
         return null;

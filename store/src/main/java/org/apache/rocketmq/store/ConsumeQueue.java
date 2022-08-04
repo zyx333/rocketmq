@@ -32,7 +32,7 @@ import org.apache.rocketmq.store.config.StorePathConfigHelper;
 public class ConsumeQueue {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
-    // ConsumeQueue一个存储单元的大小
+    // ConsumeQueue一个存储条目的大小
     public static final int CQ_STORE_UNIT_SIZE = 20;
     private static final InternalLogger LOG_ERROR = InternalLoggerFactory.getLogger(LoggerName.STORE_ERROR_LOGGER_NAME);
 
@@ -551,7 +551,7 @@ public class ConsumeQueue {
     }
 
     /**
-     *
+     * 根据偏移量获取消息队列条目
      * @param startIndex 逻辑偏移量
      * @return
      */
@@ -562,6 +562,7 @@ public class ConsumeQueue {
         if (offset >= this.getMinLogicOffset()) {
             MappedFile mappedFile = this.mappedFileQueue.findMappedFileByOffset(offset);
             if (mappedFile != null) {
+                // 根据文件内的偏移量读取消息
                 SelectMappedBufferResult result = mappedFile.selectMappedBuffer((int) (offset % mappedFileSize));
                 return result;
             }

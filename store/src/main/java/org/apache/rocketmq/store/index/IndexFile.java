@@ -32,7 +32,7 @@ public class IndexFile {
     private static int hashSlotSize = 4;
     private static int indexSize = 20;
     private static int invalidIndex = 0;
-    // 哈希槽的数目
+    // 哈希槽的总数
     private final int hashSlotNum;
     // 最大允许的index条目
     private final int indexNum;
@@ -137,19 +137,23 @@ public class IndexFile {
                 // 保存当前哈希槽的值
                 this.mappedByteBuffer.putInt(absIndexPos + 4 + 8 + 4, slotValue);
 
-                // 保存该位置哈希码对应的最新index条目的索引
+                // 保存该位置哈希码对应的最新index条目的索引（逻辑索引）
                 this.mappedByteBuffer.putInt(absSlotPos, this.indexHeader.getIndexCount());
 
                 // 更新文件索引头信息
+                // 如果是第一个条目，设置起始偏移量和时间戳
                 if (this.indexHeader.getIndexCount() <= 1) {
                     this.indexHeader.setBeginPhyOffset(phyOffset);
                     this.indexHeader.setBeginTimestamp(storeTimestamp);
                 }
 
+                // 如果是哈希槽的第一个条目，则更小哈希槽个数
                 if (invalidIndex == slotValue) {
                     this.indexHeader.incHashSlotCount();
                 }
+                // 更新索引条目数
                 this.indexHeader.incIndexCount();
+                // 更新最新偏移量和时间戳
                 this.indexHeader.setEndPhyOffset(phyOffset);
                 this.indexHeader.setEndTimestamp(storeTimestamp);
 

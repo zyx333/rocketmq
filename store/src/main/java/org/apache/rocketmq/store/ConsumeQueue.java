@@ -180,7 +180,9 @@ public class ConsumeQueue {
                     while (high >= low) {
                         midOffset = (low + high) / (2 * CQ_STORE_UNIT_SIZE) * CQ_STORE_UNIT_SIZE;
                         byteBuffer.position(midOffset);
+                        // 获取消息物理偏移量
                         long phyOffset = byteBuffer.getLong();
+                        // 获取消息大小
                         int size = byteBuffer.getInt();
                         if (phyOffset < minPhysicOffset) {
                             low = midOffset + CQ_STORE_UNIT_SIZE;

@@ -205,6 +205,7 @@ public class IndexService {
             DispatchRequest msg = req;
             String topic = msg.getTopic();
             String keys = msg.getKeys();
+            // 重复消息
             if (msg.getCommitLogOffset() < endPhyOffset) {
                 return;
             }
@@ -219,6 +220,7 @@ public class IndexService {
                     return;
             }
 
+            // 消息有唯一键，则把唯一键加入到index文件
             if (req.getUniqKey() != null) {
                 indexFile = putKey(indexFile, msg, buildKey(topic, req.getUniqKey()));
                 if (indexFile == null) {
@@ -228,6 +230,7 @@ public class IndexService {
             }
 
             if (keys != null && keys.length() > 0) {
+                // rocketmq支持为同一个消息建立多个索引
                 String[] keyset = keys.split(MessageConst.KEY_SEPARATOR);
                 for (int i = 0; i < keyset.length; i++) {
                     String key = keyset[i];
@@ -245,6 +248,8 @@ public class IndexService {
         }
     }
 
+    // 包含了失败重试策略。
+    // 返回值为同步成功的index文件
     private IndexFile putKey(IndexFile indexFile, DispatchRequest msg, String idxKey) {
         for (boolean ok = indexFile.putKey(idxKey, msg.getCommitLogOffset(), msg.getStoreTimestamp()); !ok; ) {
             log.warn("Index file [" + indexFile.getFileName() + "] is full, trying to create another one");
@@ -289,6 +294,7 @@ public class IndexService {
         return indexFile;
     }
 
+    // 获取Index文件
     public IndexFile getAndCreateLastIndexFile() {
         IndexFile indexFile = null;
         IndexFile prevIndexFile = null;
@@ -311,8 +317,10 @@ public class IndexService {
             this.readWriteLock.readLock().unlock();
         }
 
+        // 最后一个index已经存满，则新建一个
         if (indexFile == null) {
             try {
+                // 文件名用当前时间戳
                 String fileName =
                     this.storePath + File.separator
                         + UtilAll.timeMillisToHumanString(System.currentTimeMillis());

@@ -253,9 +253,11 @@ public class MappedFile extends ReferenceResource {
         return this.fileFromOffset;
     }
 
+    // 追加到内存映射文件，不做刷盘操作
     public boolean appendMessage(final byte[] data) {
         int currentPos = this.wrotePosition.get();
 
+        // 当前文件空间是否够用
         if ((currentPos + data.length) <= this.fileSize) {
             try {
                 ByteBuffer buf = this.mappedByteBuffer.slice();

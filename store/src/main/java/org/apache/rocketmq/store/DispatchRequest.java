@@ -34,7 +34,7 @@ public class DispatchRequest {
     private final int sysFlag;
     private final long preparedTransactionOffset;
     private final Map<String, String> propertiesMap;
-    private byte[] bitMap;
+    private byte[] bitMap; // 位图
 
     private int bufferSize = -1;//the buffer size maybe larger than the msg size if the message is wrapped by something
 

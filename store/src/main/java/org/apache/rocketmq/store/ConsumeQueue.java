@@ -363,6 +363,7 @@ public class ConsumeQueue {
                         long tagsCode = result.getByteBuffer().getLong();
 
                         if (offsetPy >= phyMinOffset) {
+                            // 根据CommitLog二最小物理偏移量，更新ConsumeQueue的最小偏移量
                             this.minLogicOffset = mappedFile.getFileFromOffset() + i;
                             log.info("Compute logical min offset: {}, topic: {}, queueId: {}",
                                 this.getMinOffsetInQueue(), this.topic, this.queueId);

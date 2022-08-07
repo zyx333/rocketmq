@@ -1535,6 +1535,7 @@ public class DefaultMessageStore implements MessageStore {
             }
         }
 
+        // 保存消息队列的偏移量信息
         this.commitLog.setTopicQueueTable(table);
     }
 

@@ -238,6 +238,7 @@ public class IndexFile {
                     // 没有对应的条目
                 } else {
                     for (int nextIndexToRead = slotValue; ; ) {
+                        // 已经拿到需要的条目数
                         if (phyOffsets.size() >= maxNum) {
                             break;
                         }
@@ -260,6 +261,7 @@ public class IndexFile {
                         // 转化成ms
                         timeDiff *= 1000L;
 
+                        // 获取的当前条目的时间戳
                         long timeRead = this.indexHeader.getBeginTimestamp() + timeDiff;
                         boolean timeMatched = (timeRead >= begin) && (timeRead <= end);
 

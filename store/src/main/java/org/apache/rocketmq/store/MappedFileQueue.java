@@ -376,18 +376,22 @@ public class MappedFileQueue {
         int deleteCount = 0;
         List<MappedFile> files = new ArrayList<MappedFile>();
         if (null != mfs) {
+            // 遍历文件,只删除到倒数第二个文件
             for (int i = 0; i < mfsLength; i++) {
                 MappedFile mappedFile = (MappedFile) mfs[i];
                 long liveMaxTimestamp = mappedFile.getLastModifiedTimestamp() + expiredTime;
+                // 如果文件过期
                 if (System.currentTimeMillis() >= liveMaxTimestamp || cleanImmediately) {
-                    if (mappedFile.destroy(intervalForcibly)) {
+                    if (mappedFile.destroy(intervalForcibly)) { // 和下面deleteExpiredFile的区别
                         files.add(mappedFile);
                         deleteCount++;
 
+                        // 一次最多删除10个文件
                         if (files.size() >= DELETE_FILES_BATCH_MAX) {
                             break;
                         }
 
+                        // 一批次删除多个文件之间，间隔deleteFilesInterval再执行下一个文件的删除
                         if (deleteFilesInterval > 0 && (i + 1) < mfsLength) {
                             try {
                                 Thread.sleep(deleteFilesInterval);
@@ -404,6 +408,7 @@ public class MappedFileQueue {
             }
         }
 
+        // 清除已删除文件在mappedFiles中的引用
         deleteExpiredFile(files);
 
         return deleteCount;

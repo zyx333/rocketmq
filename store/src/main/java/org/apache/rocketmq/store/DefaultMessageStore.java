@@ -1719,6 +1719,7 @@ public class DefaultMessageStore implements MessageStore {
 
         public void run() {
             try {
+                // 删除过期CommitLog文件
                 this.deleteExpiredFiles();
 
                 this.redeleteHangedFile();
@@ -1729,14 +1730,17 @@ public class DefaultMessageStore implements MessageStore {
 
         private void deleteExpiredFiles() {
             int deleteCount = 0;
+            // 保留文件的时间
             long fileReservedTime = DefaultMessageStore.this.getMessageStoreConfig().getFileReservedTime();
             int deletePhysicFilesInterval = DefaultMessageStore.this.getMessageStoreConfig().getDeleteCommitLogFilesInterval();
+            // 清理文件时，如果文件被其他线程占用，强制清理的时间间隔
             int destroyMapedFileIntervalForcibly = DefaultMessageStore.this.getMessageStoreConfig().getDestroyMapedFileIntervalForcibly();
 
-            boolean timeup = this.isTimeToDelete();
-            boolean spacefull = this.isSpaceToDelete();
-            boolean manualDelete = this.manualDeleteFileSeveralTimes > 0;
+            boolean timeup = this.isTimeToDelete(); // 是否是删除文件的时间点，默认凌晨4点
+            boolean spacefull = this.isSpaceToDelete(); // 磁盘是否占满
+            boolean manualDelete = this.manualDeleteFileSeveralTimes > 0; // 手动触发删除命令
 
+            // 以上条件满足任意一个，则执行删除
             if (timeup || spacefull || manualDelete) {
 
                 if (manualDelete)
@@ -1753,6 +1757,7 @@ public class DefaultMessageStore implements MessageStore {
 
                 fileReservedTime *= 60 * 60 * 1000;
 
+                // 删除文件操作
                 deleteCount = DefaultMessageStore.this.commitLog.deleteExpiredFile(fileReservedTime, deletePhysicFilesInterval,
                     destroyMapedFileIntervalForcibly, cleanAtOnce);
                 if (deleteCount > 0) {

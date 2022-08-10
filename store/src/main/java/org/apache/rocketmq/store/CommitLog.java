@@ -1035,6 +1035,7 @@ public class CommitLog {
         protected static final int RETRY_TIMES_OVER = 10;
     }
 
+    // 提交线程，把数据从堆外内存提交到物理文件的内存映射
     class CommitRealTimeService extends FlushCommitLogService {
 
         private long lastCommitTimestamp = 0;
@@ -1050,6 +1051,7 @@ public class CommitLog {
             while (!this.isStopped()) {
                 int interval = CommitLog.this.defaultMessageStore.getMessageStoreConfig().getCommitIntervalCommitLog();
 
+                // 一次提交包含的最小页数
                 int commitDataLeastPages = CommitLog.this.defaultMessageStore.getMessageStoreConfig().getCommitCommitLogLeastPages();
 
                 int commitDataThoroughInterval =
@@ -1058,21 +1060,25 @@ public class CommitLog {
                 long begin = System.currentTimeMillis();
                 if (begin >= (this.lastCommitTimestamp + commitDataThoroughInterval)) {
                     this.lastCommitTimestamp = begin;
+                    // 如果距离上次提交的间隔大于commitDataThoroughInterval，则忽略最小页数的限制
                     commitDataLeastPages = 0;
                 }
 
                 try {
+                    // 将数据提交到物理文件的内存映射
                     boolean result = CommitLog.this.mappedFileQueue.commit(commitDataLeastPages);
                     long end = System.currentTimeMillis();
-                    if (!result) {
+                    if (!result) { // result为false表示有数据提交成功
                         this.lastCommitTimestamp = end; // result = false means some data committed.
                         //now wake up flush thread.
+                        // 唤醒刷盘线程
                         flushCommitLogService.wakeup();
                     }
 
                     if (end - begin > 500) {
                         log.info("Commit data to file costs {} ms", end - begin);
                     }
+                    // 等待200ms后执行下一次任务
                     this.waitForRunning(interval);
                 } catch (Throwable e) {
                     CommitLog.log.error(this.getServiceName() + " service has exception. ", e);
@@ -1088,6 +1094,7 @@ public class CommitLog {
         }
     }
 
+    // 刷盘线程，把数据从内存刷到物理文件
     class FlushRealTimeService extends FlushCommitLogService {
         private long lastFlushTimestamp = 0;
         private long printTimes = 0;
@@ -1110,6 +1117,7 @@ public class CommitLog {
                 long currentTimeMillis = System.currentTimeMillis();
                 if (currentTimeMillis >= (this.lastFlushTimestamp + flushPhysicQueueThoroughInterval)) {
                     this.lastFlushTimestamp = currentTimeMillis;
+                    // 刷盘间隔较大时，忽略最小提交页数限制
                     flushPhysicQueueLeastPages = 0;
                     printFlushProgress = (printTimes++ % 10) == 0;
                 }
@@ -1121,13 +1129,16 @@ public class CommitLog {
                         this.waitForRunning(interval);
                     }
 
+                    // 打印刷盘进度
                     if (printFlushProgress) {
                         this.printFlushProgress();
                     }
 
                     long begin = System.currentTimeMillis();
+                    // 将数据刷入磁盘
                     CommitLog.this.mappedFileQueue.flush(flushPhysicQueueLeastPages);
                     long storeTimestamp = CommitLog.this.mappedFileQueue.getStoreTimestamp();
+                    // 更新checkpoint文件
                     if (storeTimestamp > 0) {
                         CommitLog.this.defaultMessageStore.getStoreCheckpoint().setPhysicMsgTimestamp(storeTimestamp);
                     }

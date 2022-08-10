@@ -1805,6 +1805,7 @@ public class DefaultMessageStore implements MessageStore {
                 double minPhysicRatio = 100;
                 String minStorePath = null;
                 for (String storePathPhysic : storePaths) {
+                    // 当前分区磁盘使用率
                     double physicRatio = UtilAll.getDiskPartitionSpaceUsedPercent(storePathPhysic);
                     if (minPhysicRatio > physicRatio) {
                         minPhysicRatio =  physicRatio;
@@ -1815,7 +1816,9 @@ public class DefaultMessageStore implements MessageStore {
                     }
                 }
                 DefaultMessageStore.this.commitLog.setFullStorePaths(fullStorePath);
+                // 磁盘使用率大于90%阈值时，标记磁盘为不可写入，并设置立即清理标记为true
                 if (minPhysicRatio > diskSpaceWarningLevelRatio) {
+                    // 设置磁盘不可写入
                     boolean diskok = DefaultMessageStore.this.runningFlags.getAndMakeDiskFull();
                     if (diskok) {
                         DefaultMessageStore.log.error("physic disk maybe full soon " + minPhysicRatio +
@@ -1826,6 +1829,7 @@ public class DefaultMessageStore implements MessageStore {
                 } else if (minPhysicRatio > diskSpaceCleanForciblyRatio) {
                     cleanImmediately = true;
                 } else {
+                    // 恢复磁盘可写状态
                     boolean diskok = DefaultMessageStore.this.runningFlags.getAndMakeDiskOK();
                     if (!diskok) {
                         DefaultMessageStore.log.info("physic disk space OK " + minPhysicRatio +

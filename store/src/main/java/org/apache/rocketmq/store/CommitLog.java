@@ -1202,7 +1202,9 @@ public class CommitLog {
      * GroupCommit Service
      */
     class GroupCommitService extends FlushCommitLogService {
+        // 同步刷盘任务暂存容器
         private volatile LinkedList<GroupCommitRequest> requestsWrite = new LinkedList<GroupCommitRequest>();
+        // 处理刷盘任务的容器。使用read和write两个容器，避免任务提交与任务执行的锁冲突
         private volatile LinkedList<GroupCommitRequest> requestsRead = new LinkedList<GroupCommitRequest>();
         private final PutMessageSpinLock lock = new PutMessageSpinLock();
 
@@ -1233,6 +1235,7 @@ public class CommitLog {
                     // There may be a message in the next file, so a maximum of
                     // two times the flush
                     boolean flushOK = CommitLog.this.mappedFileQueue.getFlushedWhere() >= req.getNextOffset();
+                    // 重试策略，最多刷两次
                     for (int i = 0; i < 2 && !flushOK; i++) {
                         CommitLog.this.mappedFileQueue.flush(0);
                         flushOK = CommitLog.this.mappedFileQueue.getFlushedWhere() >= req.getNextOffset();
@@ -1259,6 +1262,8 @@ public class CommitLog {
 
             while (!this.isStopped()) {
                 try {
+                    // requestsRead遍历完成后，如果requestsWrite队列不为空，那么这里的wait是不会生效的。
+                    // 直接交换两个队列，继续执行新的任务
                     this.waitForRunning(10);
                     this.doCommit();
                 } catch (Exception e) {

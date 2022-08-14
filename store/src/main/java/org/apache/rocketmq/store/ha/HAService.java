@@ -41,6 +41,7 @@ import org.apache.rocketmq.store.DefaultMessageStore;
 import org.apache.rocketmq.store.PutMessageSpinLock;
 import org.apache.rocketmq.store.PutMessageStatus;
 
+// 主从同步核心实现
 public class HAService {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
@@ -107,7 +108,9 @@ public class HAService {
     // }
 
     public void start() throws Exception {
+        // 主服务启动，并监听从服务器的连接
         this.acceptSocketService.beginAccept();
+        // 从服务器和主服务器建立tcp连接
         this.acceptSocketService.start();
         this.groupTransferService.start();
         this.haClient.start();
@@ -328,12 +331,16 @@ public class HAService {
 
     class HAClient extends ServiceThread {
         private static final int READ_MAX_BUFFER_SIZE = 1024 * 1024 * 4;
+        // 主服务器地址
         private final AtomicReference<String> masterAddress = new AtomicReference<>();
+        // 从服务器向主服务器发起主从同步的偏移量
         private final ByteBuffer reportOffset = ByteBuffer.allocate(8);
         private SocketChannel socketChannel;
         private Selector selector;
+        // 上一次写入消息的时间戳
         private long lastWriteTimestamp = System.currentTimeMillis();
 
+        // 从服务器当前的复制进度
         private long currentReportedOffset = 0;
         private int dispatchPosition = 0;
         private ByteBuffer byteBufferRead = ByteBuffer.allocate(READ_MAX_BUFFER_SIZE);
@@ -351,6 +358,8 @@ public class HAService {
             }
         }
 
+        // 是否需要向主服务器反馈当前待拉取消息的偏移量。
+        // 默认每5s发送一次
         private boolean isTimeToReportOffset() {
             long interval =
                 HAService.this.defaultMessageStore.getSystemClock().now() - this.lastWriteTimestamp;
@@ -360,6 +369,7 @@ public class HAService {
             return needHeart;
         }
 
+        // 向服务器反馈拉取消息的偏移量
         private boolean reportSlaveMaxOffset(final long maxOffset) {
             this.reportOffset.position(0);
             this.reportOffset.limit(8);
@@ -367,6 +377,7 @@ public class HAService {
             this.reportOffset.position(0);
             this.reportOffset.limit(8);
 
+            // 因为NIO是非阻塞IO，调用一次不一定能将reportOffset可读字节全部写入。##
             for (int i = 0; i < 3 && this.reportOffset.hasRemaining(); i++) {
                 try {
                     this.socketChannel.write(this.reportOffset);
@@ -494,6 +505,7 @@ public class HAService {
             return result;
         }
 
+        // 连接主服务器
         private boolean connectMaster() throws ClosedChannelException {
             if (null == socketChannel) {
                 String addr = this.masterAddress.get();

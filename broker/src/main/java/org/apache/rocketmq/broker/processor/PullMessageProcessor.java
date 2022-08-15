@@ -479,6 +479,7 @@ public class PullMessageProcessor extends AsyncNettyRequestProcessor implements 
             && this.brokerController.getMessageStoreConfig().getBrokerRole() != BrokerRole.SLAVE;
         if (storeOffsetEnable) {
             // 更新消息消费进度
+            // 使用消费端的消费进度，更新broker端保存的消费进度。
             this.brokerController.getConsumerOffsetManager().commitOffset(RemotingHelper.parseChannelRemoteAddr(channel),
                 requestHeader.getConsumerGroup(), requestHeader.getTopic(), requestHeader.getQueueId(), requestHeader.getCommitOffset());
         }

@@ -45,10 +45,15 @@ public class SlaveSynchronize {
         this.masterAddr = masterAddr;
     }
 
+    // 从节点元信息同步
     public void syncAll() {
+        // 同步topic路由信息
         this.syncTopicConfig();
+        // 同步消费进度
         this.syncConsumerOffset();
+        // 延迟队列调度进度
         this.syncDelayOffset();
+        // 消费组信息
         this.syncSubscriptionGroupConfig();
     }
 

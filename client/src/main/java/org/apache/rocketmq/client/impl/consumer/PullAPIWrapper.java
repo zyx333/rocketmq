@@ -115,6 +115,7 @@ public class PullAPIWrapper {
         return pullResult;
     }
 
+    // 更新下一次拉取消息建议的brokerId
     public void updatePullFromWhichNode(final MessageQueue mq, final long brokerId) {
         AtomicLong suggest = this.pullFromWhichNodeTable.get(mq);
         if (null == suggest) {

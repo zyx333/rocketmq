@@ -727,9 +727,12 @@ public class DefaultMessageStore implements MessageStore {
 
                         nextBeginOffset = offset + (i / ConsumeQueue.CQ_STORE_UNIT_SIZE);
 
+                        // 消费端未拉取的消息长度
                         long diff = maxOffsetPy - maxPhyOffsetPulling;
+                        // RocketMQ常驻内存的大小
                         long memory = (long) (StoreUtil.TOTAL_PHYSICAL_MEMORY_SIZE
                             * (this.messageStoreConfig.getAccessMessageInMemoryMaxRatio() / 100.0));
+                        // 需要拉取的消息超出常驻内存大小时，表示主服务器繁忙，此时建议从从服务器拉取消息
                         getResult.setSuggestPullingFromSlave(diff > memory);
                     } finally {
 

@@ -488,8 +488,8 @@ public class MessageDecoder {
             + 4 // 2 MAGICCOD
             + 4 // 3 BODYCRC
             + 4 // 4 FLAG
-            + 4 + bodyLen // 4 BODY
-            + 2 + propertiesLength;
+            + 4 + bodyLen // 4 BODY。 四字节消息长度+消息体
+            + 2 + propertiesLength; // 两字节的扩展属性长度+扩展属性内容
         ByteBuffer byteBuffer = ByteBuffer.allocate(storeSize);
         // 1 TOTALSIZE
         byteBuffer.putInt(storeSize);

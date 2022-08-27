@@ -63,11 +63,12 @@ public class Validators {
         // 不允许发送消息的topic。比如系统默认的定时消息SCHEDULE_TOPIC_XXXX
         Validators.isNotAllowedSendTopic(msg.getTopic());
 
-        // body
+        // body. 消息体不能为null
         if (null == msg.getBody()) {
             throw new MQClientException(ResponseCode.MESSAGE_ILLEGAL, "the message body is null");
         }
 
+        // 消息体长度不能为0
         if (0 == msg.getBody().length) {
             throw new MQClientException(ResponseCode.MESSAGE_ILLEGAL, "the message body length is zero");
         }

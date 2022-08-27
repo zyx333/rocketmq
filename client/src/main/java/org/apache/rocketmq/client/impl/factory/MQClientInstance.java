@@ -831,6 +831,7 @@ public class MQClientInstance {
 
     }
 
+    // 缓存的生产者或者消费者路由信息为空时则更新
     private boolean isNeedUpdateTopicRouteInfo(final String topic) {
         boolean result = false;
         {

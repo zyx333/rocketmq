@@ -1,0 +1,11 @@
+@startuml
+
+autonumber 1
+BrokerStartup -> BrokerStartup: main方法启动
+BrokerStartup -> BrokerController: initialize() controller初始化
+BrokerStartup -> BrokerController: start() controller启动
+
+
+
+
+@enduml

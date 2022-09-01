@@ -641,14 +641,16 @@ public class CommitLog {
 
                 // 指定延迟消息对应的队列
                 topic = TopicValidator.RMQ_SYS_SCHEDULE_TOPIC;
+                // 每个delayLevel对应一个队列
                 int queueId = ScheduleMessageService.delayLevel2QueueId(msg.getDelayTimeLevel());
 
                 // Backup real topic, queueId
-                // 保存原始的topic和queueid
+                // 保存原始的topic和queueid在扩展属性里
                 MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_TOPIC, msg.getTopic());
                 MessageAccessor.putProperty(msg, MessageConst.PROPERTY_REAL_QUEUE_ID, String.valueOf(msg.getQueueId()));
                 msg.setPropertiesString(MessageDecoder.messageProperties2String(msg.getProperties()));
 
+                // 设置topic和队列为定时消息的topic
                 msg.setTopic(topic);
                 msg.setQueueId(queueId);
             }
@@ -665,6 +667,7 @@ public class CommitLog {
         }
 
         PutMessageThreadLocal putMessageThreadLocal = this.putMessageThreadLocal.get();
+        // 把消息内存保存到encoderBuffer
         PutMessageResult encodeResult = putMessageThreadLocal.getEncoder().encode(msg);
         if (encodeResult != null) {
             return CompletableFuture.completedFuture(encodeResult);
@@ -694,6 +697,7 @@ public class CommitLog {
                 return CompletableFuture.completedFuture(new PutMessageResult(PutMessageStatus.CREATE_MAPEDFILE_FAILED, null));
             }
 
+            // 往CommitLog追加消息
             result = mappedFile.appendMessage(msg, this.appendMessageCallback, putMessageContext);
             switch (result.getStatus()) {
                 case PUT_OK:
@@ -724,6 +728,7 @@ public class CommitLog {
             putMessageLock.unlock();
         }
 
+        // 写入消息耗时大于500ms，则打印日志。可以认为是慢日志
         if (elapsedTimeInLock > 500) {
             log.warn("[NOTIFYME]putMessage in lock cost time(ms)={}, bodyLength={} AppendMessageResult={}", elapsedTimeInLock, msg.getBody().length, result);
         }
@@ -1378,6 +1383,7 @@ public class CommitLog {
                     break;
             }
 
+            // 获取消息内容
             ByteBuffer preEncodeBuffer = msgInner.getEncodedBuff();
             final int msgLen = preEncodeBuffer.getInt(0);
 
@@ -1546,6 +1552,7 @@ public class CommitLog {
 
     public static class MessageExtEncoder {
         // Store the message content
+        //encoderBuffer里存储了完整的消息体
         private final ByteBuffer encoderBuffer;
         // The maximum length of the message
         private final int maxMessageSize;

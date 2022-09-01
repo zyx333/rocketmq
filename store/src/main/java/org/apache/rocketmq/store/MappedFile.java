@@ -229,6 +229,9 @@ public class MappedFile extends ReferenceResource {
         int currentPos = this.wrotePosition.get();
 
         if (currentPos < this.fileSize) {
+            // 重要：writeBuffer调用slice重新创建一段共享缓冲区，并修该共享缓冲区的position，然后往共享缓冲区里写入消息。
+            // 因为writeBuffer和新缓存区数据共享，而position独立，所以相当于往writeBuffer里写入里数据，但是其position不变。
+            // 同时因为对writeBuffer的操作都是通过共享缓冲区实现的，所以writeBuffer的position不变，一直为0.
             ByteBuffer byteBuffer = writeBuffer != null ? writeBuffer.slice() : this.mappedByteBuffer.slice();
             byteBuffer.position(currentPos);
             AppendMessageResult result;

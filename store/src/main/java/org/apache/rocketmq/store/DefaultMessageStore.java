@@ -485,8 +485,10 @@ public class DefaultMessageStore implements MessageStore {
 
 
         long beginTime = this.getSystemClock().now();
+        // 写入消息
         CompletableFuture<PutMessageResult> putResultFuture = this.commitLog.asyncPutMessage(msg);
 
+        // todo 异步操作？先返回putResultFuture，在putResultFuture返回后再异步执行thenAccept逻辑。确认是异步还是同步？
         putResultFuture.thenAccept((result) -> {
             // 更新统计信息
             long elapsedTime = this.getSystemClock().now() - beginTime;

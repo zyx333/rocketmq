@@ -164,6 +164,7 @@ public class AllocateMappedFileService extends ServiceThread {
                 long beginTime = System.currentTimeMillis();
 
                 MappedFile mappedFile;
+                // 启用堆外内存
                 if (messageStore.getMessageStoreConfig().isTransientStorePoolEnable()) {
                     try {
                         mappedFile = ServiceLoader.load(MappedFile.class).iterator().next();
@@ -173,6 +174,7 @@ public class AllocateMappedFileService extends ServiceThread {
                         mappedFile = new MappedFile(req.getFilePath(), req.getFileSize(), messageStore.getTransientStorePool());
                     }
                 } else {
+                    // 不启用堆外内存
                     mappedFile = new MappedFile(req.getFilePath(), req.getFileSize());
                 }
 

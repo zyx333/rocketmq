@@ -29,6 +29,9 @@ import org.apache.rocketmq.store.util.LibC;
 import sun.nio.ch.DirectBuffer;
 
 // 堆外内存池
+// 使用堆外内存临时存储数据，此机制提供了内存锁定，将堆外内存一直锁定在内存中，避免进程将内存交换到磁盘。
+// 通过TransientStorePool，rocketmq还实现了内存级别的读写分离机制。消息先写入堆外内存，异步刷新到pagecache；而消息消费时不会从对外内存读取数据；
+// 而是从pagecache读取，这样就实现了读写分离。但是缺点是如果broker进程异常退出，会丢失堆外内存的数据。
 public class TransientStorePool {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 

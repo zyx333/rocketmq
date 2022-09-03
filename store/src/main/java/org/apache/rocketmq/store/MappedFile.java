@@ -63,7 +63,7 @@ public class MappedFile extends ReferenceResource {
     protected int fileSize;
     protected FileChannel fileChannel;
     /**
-     * 堆外内存ByteBuffer
+     * 堆外内存ByteBuffer。  transientStorePoolEnable为TRUE时才会使用writeBuffer
      * Message will put to here first, and then reput to FileChannel if writeBuffer is not null.
      */
     protected ByteBuffer writeBuffer = null;
@@ -172,7 +172,7 @@ public class MappedFile extends ReferenceResource {
         this.fileName = fileName;
         this.fileSize = fileSize;
         this.file = new File(fileName);
-        // 其实偏移量为文件名
+        // 起始偏移量为文件名
         this.fileFromOffset = Long.parseLong(this.file.getName());
         boolean ok = false;
 
@@ -445,6 +445,7 @@ public class MappedFile extends ReferenceResource {
         return null;
     }
 
+    // 读取pos到readPosition之间的数据
     public SelectMappedBufferResult selectMappedBuffer(int pos) {
         int readPosition = getReadPosition();
         if (pos < readPosition && pos >= 0) {

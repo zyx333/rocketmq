@@ -424,6 +424,7 @@ public class MappedFile extends ReferenceResource {
         return this.fileSize == this.wrotePosition.get();
     }
 
+    // 从mappedFile指定的位置pos，读取size字节的数据
     public SelectMappedBufferResult selectMappedBuffer(int pos, int size) {
         int readPosition = getReadPosition();
         if ((pos + size) <= readPosition) {

@@ -147,7 +147,7 @@ public class IndexFile {
                     this.indexHeader.setBeginTimestamp(storeTimestamp);
                 }
 
-                // 如果是哈希槽的第一个条目，则更小哈希槽个数
+                // 如果是哈希槽的第一个条目，则更新哈希槽个数
                 if (invalidIndex == slotValue) {
                     this.indexHeader.incHashSlotCount();
                 }

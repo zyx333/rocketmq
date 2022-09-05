@@ -192,6 +192,8 @@ public class CommitLog {
         return this.getData(offset, offset == 0);
     }
 
+    // 先根据offset判断所在的mappedFile
+    // 然后从该mappedFile读取offset之后可用的数据
     public SelectMappedBufferResult getData(final long offset, final boolean returnFirstOnNotFound) {
         int mappedFileSize = this.defaultMessageStore.getMessageStoreConfig().getMappedFileSizeCommitLog();
         MappedFile mappedFile = this.mappedFileQueue.findMappedFileByOffset(offset, returnFirstOnNotFound);
@@ -1573,6 +1575,7 @@ public class CommitLog {
             byteBuffer.putInt(inetSocketAddress.getPort());
         }
 
+        // 消息内容编码
         protected PutMessageResult encode(MessageExtBrokerInner msgInner) {
             /**
              * Serialize message

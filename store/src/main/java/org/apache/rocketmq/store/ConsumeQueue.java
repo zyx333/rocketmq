@@ -45,7 +45,7 @@ public class ConsumeQueue {
 
     private final String storePath;
     private final int mappedFileSize;
-    // 同步到的CommitLog的偏移量
+    // ConsumeQueue上一次更新的消息在CommitLog的偏移量
     private long maxPhysicOffset = -1;
     private volatile long minLogicOffset = 0;
     private ConsumeQueueExt consumeQueueExt = null;

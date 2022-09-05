@@ -25,6 +25,7 @@ public class DispatchRequest {
     private int msgSize; // 消息长度
     private final long tagsCode;
     private final long storeTimestamp;
+    // 逻辑偏移量
     private final long consumeQueueOffset;
     private final String keys;
     // 是否成功解析到完整消息

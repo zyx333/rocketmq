@@ -530,6 +530,7 @@ public class ConsumeQueue {
                     return true;
                 }
 
+                // 正常情况下这两个偏移量应该是相等的
                 if (expectLogicOffset != currentLogicOffset) {
                     LOG_ERROR.warn(
                         "[BUG]logic queue order maybe wrong, expectLogicOffset: {} currentLogicOffset: {} Topic: {} QID: {} Diff: {}",

@@ -2042,6 +2042,7 @@ public class DefaultMessageStore implements MessageStore {
     }
 
     // 转发CommitLog更新事件，用于更新ConsumeQueue和Index文件
+    // broker启动时启动线程，并设置同步起始点reputFromOffset。之后每1ms循环一次，准实时地执行ConsumeQueue和index文件的同步操作
     class ReputMessageService extends ServiceThread {
         // 表示从哪个偏移量开始转发消息给ConsumeQueue和Index
         private volatile long reputFromOffset = 0;
@@ -2100,6 +2101,7 @@ public class DefaultMessageStore implements MessageStore {
 
                         for (int readSize = 0; readSize < result.getSize() && doNext; ) {
                             // 每次读取一条消息创建dispatchRequest
+                            // 因为同步到ConsumeQueue和index不需要知道消息体，所以这里不读取消息体
                             DispatchRequest dispatchRequest =
                                 DefaultMessageStore.this.commitLog.checkMessageAndReturnSize(result.getByteBuffer(), false, false);
                             int size = dispatchRequest.getBufferSize() == -1 ? dispatchRequest.getMsgSize() : dispatchRequest.getBufferSize();

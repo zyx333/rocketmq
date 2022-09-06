@@ -195,6 +195,7 @@ public class IndexService {
         return new QueryOffsetResult(phyOffsets, indexLastUpdateTimestamp, indexLastUpdatePhyoffset);
     }
 
+    // 使用topic和key构建索引key。所以
     private String buildKey(final String topic, final String key) {
         return topic + "#" + key;
     }

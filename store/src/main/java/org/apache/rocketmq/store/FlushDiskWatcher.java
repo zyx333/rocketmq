@@ -39,6 +39,7 @@ public class FlushDiskWatcher extends ServiceThread {
         while (!isStopped()) {
             GroupCommitRequest request = null;
             try {
+                // 循环从队列中取出请求
                 request = commitRequests.take();
             } catch (InterruptedException e) {
                 log.warn("take flush disk commit request, but interrupted, this may caused by shutdown");
@@ -46,6 +47,7 @@ public class FlushDiskWatcher extends ServiceThread {
             }
             while (!request.future().isDone()) {
                 long now = System.nanoTime();
+                // 刷盘超时
                 if (now - request.getDeadLine() >= 0) {
                     request.wakeupCustomer(PutMessageStatus.FLUSH_DISK_TIMEOUT);
                     break;

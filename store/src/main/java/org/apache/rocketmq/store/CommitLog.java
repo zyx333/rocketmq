@@ -80,6 +80,7 @@ public class CommitLog {
     private volatile Set<String> fullStorePaths = Collections.emptySet();
 
     private final MultiDispatch multiDispatch;
+    // 用于监控刷盘请求的耗时
     private final FlushDiskWatcher flushDiskWatcher;
 
     public CommitLog(final DefaultMessageStore defaultMessageStore) {
@@ -213,6 +214,7 @@ public class CommitLog {
     public void recoverNormally(long maxPhyOffsetOfConsumeQueue) {
         boolean checkCRCOnRecover = this.defaultMessageStore.getMessageStoreConfig().isCheckCRCOnRecover();
         final List<MappedFile> mappedFiles = this.mappedFileQueue.getMappedFiles();
+        // mappedFiles非空说明不是第一次启动
         if (!mappedFiles.isEmpty()) {
             // Began to recover from the last third file
             // 从倒数第三个文件开始恢复
@@ -881,6 +883,7 @@ public class CommitLog {
         if (FlushDiskType.SYNC_FLUSH == this.defaultMessageStore.getMessageStoreConfig().getFlushDiskType()) {
             final GroupCommitService service = (GroupCommitService) this.flushCommitLogService;
             if (messageExt.isWaitStoreMsgOK()) {
+                // 使用本次刷盘后的偏移量和超时时间构造请求
                 GroupCommitRequest request = new GroupCommitRequest(result.getWroteOffset() + result.getWroteBytes(),
                         this.defaultMessageStore.getMessageStoreConfig().getSyncFlushTimeout());
                 flushDiskWatcher.add(request);
@@ -1238,6 +1241,7 @@ public class CommitLog {
             } finally {
                 lock.unlock();
             }
+            // 唤醒刷盘线程
             this.wakeup();
         }
 
@@ -1264,14 +1268,18 @@ public class CommitLog {
                         flushOK = CommitLog.this.mappedFileQueue.getFlushedWhere() >= req.getNextOffset();
                     }
 
+                    // 设置刷盘结果
                     req.wakeupCustomer(flushOK ? PutMessageStatus.PUT_OK : PutMessageStatus.FLUSH_DISK_TIMEOUT);
                 }
 
                 long storeTimestamp = CommitLog.this.mappedFileQueue.getStoreTimestamp();
                 if (storeTimestamp > 0) {
+                    // 更新检查点CommitLog的时间戳
                     CommitLog.this.defaultMessageStore.getStoreCheckpoint().setPhysicMsgTimestamp(storeTimestamp);
                 }
 
+
+                // 处理完成后，清空队列
                 this.requestsRead = new LinkedList<>();
             } else {
                 // Because of individual messages is set to not sync flush, it

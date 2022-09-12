@@ -225,7 +225,7 @@ public class CommitLog {
             long processOffset = mappedFile.getFileFromOffset();
             long mappedFileOffset = 0; // 当前文件已校验通过的物理偏移量
             while (true) {
-                // 遍历CommitLog文件并校验消息
+                // 遍历CommitLog文件并校验消息，每次取一条消息
                 DispatchRequest dispatchRequest = this.checkMessageAndReturnSize(byteBuffer, checkCRCOnRecover);
                 int size = dispatchRequest.getMsgSize();
                 // Normal data
@@ -261,7 +261,7 @@ public class CommitLog {
             // 更新mappedFile的指针
             this.mappedFileQueue.setFlushedWhere(processOffset);
             this.mappedFileQueue.setCommittedWhere(processOffset);
-            // 删除无效文件
+            // 删除无效文件。起始偏移量大于processOffset的文件
             this.mappedFileQueue.truncateDirtyFiles(processOffset);
 
             // Clear ConsumeQueue redundant data
@@ -481,8 +481,10 @@ public class CommitLog {
             // Looking beginning to recover from which file
             int index = mappedFiles.size() - 1;
             MappedFile mappedFile = null;
+            // 从最后一个文件开始遍历，寻找开始恢复的文件
             for (; index >= 0; index--) {
                 mappedFile = mappedFiles.get(index);
+                // 判断消息文件是否正确
                 if (this.isMappedFileMatchedRecover(mappedFile)) {
                     log.info("recover from this mapped file " + mappedFile.getFileName());
                     break;
@@ -506,7 +508,8 @@ public class CommitLog {
                     if (size > 0) {
                         mappedFileOffset += size;
 
-                        // 重新转发消息到ConsumeQueue和Index
+                        // 正常消息，则重新转发消息到ConsumeQueue和Index。
+                        // 可能会引起消息重复
                         if (this.defaultMessageStore.getMessageStoreConfig().isDuplicationEnable()) {
                             if (dispatchRequest.getCommitLogOffset() < this.defaultMessageStore.getConfirmOffset()) {
                                 this.defaultMessageStore.doDispatch(dispatchRequest);
@@ -556,6 +559,7 @@ public class CommitLog {
             log.warn("The commitlog files are deleted, and delete the consume queue files");
             this.mappedFileQueue.setFlushedWhere(0);
             this.mappedFileQueue.setCommittedWhere(0);
+            // 销毁ConsumeQueue文件
             this.defaultMessageStore.destroyLogics();
         }
     }
@@ -572,11 +576,12 @@ public class CommitLog {
         int sysFlag = byteBuffer.getInt(MessageDecoder.SYSFLAG_POSITION);
         int bornhostLength = (sysFlag & MessageSysFlag.BORNHOST_V6_FLAG) == 0 ? 8 : 20;
         int msgStoreTimePos = 4 + 4 + 4 + 4 + 4 + 8 + 8 + 4 + 8 + bornhostLength;
-        long storeTimestamp = byteBuffer.getLong(msgStoreTimePos);
-        if (0 == storeTimestamp) {
+        long storeTimestamp = byteBuffer.getLong(msgStoreTimePos); // 文件中第一条消息存储时间戳
+        if (0 == storeTimestamp) { // 说明文件中为存储消息
             return false;
         }
 
+        // 文件第一条消息的时间戳与检查点保存的时间戳对比
         if (this.defaultMessageStore.getMessageStoreConfig().isMessageIndexEnable()
             && this.defaultMessageStore.getMessageStoreConfig().isMessageIndexSafe()) {
             if (storeTimestamp <= this.defaultMessageStore.getStoreCheckpoint().getMinTimestampIndex()) {

@@ -56,7 +56,7 @@ public interface MessageStore {
     void destroy();
 
     /**
-     * 这里rocketmq基于CompletableFuture实现了同步非阻塞的请求调用。结合这里详细了解CompletableFuture的用法 todo
+     * 这里rocketmq基于CompletableFuture实现了同步非阻塞的请求调用。结合这里详细了解CompletableFuture的用法
      * Store a message into store in async manner, the processor can process the next request
      *  rather than wait for result
      *  when result is completed, notify the client in async manner

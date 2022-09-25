@@ -890,6 +890,7 @@ public class CommitLog {
                 service.putRequest(request);
                 return request.future();
             } else {
+                // 这个逻辑分支和异步刷盘有啥区别？？ todo
                 service.wakeup();
                 return CompletableFuture.completedFuture(PutMessageStatus.PUT_OK);
             }

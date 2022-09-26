@@ -402,6 +402,7 @@ public class CommitLog {
                         }
 
                         if (delayLevel > 0) {
+                            // 定时消息的tagsCode保存的是消息需要真实投递的时间戳
                             tagsCode = this.defaultMessageStore.getScheduleMessageService().computeDeliverTimestamp(delayLevel,
                                 storeTimestamp);
                         }

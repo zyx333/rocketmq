@@ -155,7 +155,7 @@ public class ScheduleMessageService extends ConfigManager {
                 }
             }
 
-            // 每个10s，将延迟消息信息持久化到磁盘
+            // 每隔10s，将延迟消息信息持久化到磁盘
             this.deliverExecutorService.scheduleAtFixedRate(new Runnable() {
 
                 @Override
@@ -215,10 +215,11 @@ public class ScheduleMessageService extends ConfigManager {
 
     @Override
     public boolean load() {
+        // 从文件中加载各延迟级别的消费进度到内存中offsetTable
         boolean result = super.load();
-        // 解析延迟级别并放到map
+        // 解析延迟级别并放到内存delayLevelTable
         result = result && this.parseDelayLevel();
-        // 加载消息消费进度
+        // 纠正消息消费进度
         result = result && this.correctDelayOffset();
         return result;
     }
@@ -350,6 +351,7 @@ public class ScheduleMessageService extends ConfigManager {
 
     class DeliverDelayedMessageTimerTask implements Runnable {
         private final int delayLevel;
+        // consumeQueue里的逻辑偏移量
         private final long offset;
 
         public DeliverDelayedMessageTimerTask(int delayLevel, long offset) {
@@ -435,20 +437,24 @@ public class ScheduleMessageService extends ConfigManager {
                     }
 
                     long now = System.currentTimeMillis();
+                    // 消息投递时间戳
                     long deliverTimestamp = this.correctDeliverTimestamp(now, tagsCode);
                     nextOffset = offset + (i / ConsumeQueue.CQ_STORE_UNIT_SIZE);
 
+                    // 消息投递倒计时
                     long countdown = deliverTimestamp - now;
                     if (countdown > 0) {
                         this.scheduleNextTimerTask(nextOffset, DELAY_FOR_A_WHILE);
                         return;
                     }
 
+                    // 根据偏移量和消息大小读取消息
                     MessageExt msgExt = ScheduleMessageService.this.defaultMessageStore.lookMessageByOffset(offsetPy, sizePy);
                     if (msgExt == null) {
                         continue;
                     }
 
+                    // 恢复原始消息
                     MessageExtBrokerInner msgInner = ScheduleMessageService.this.messageTimeup(msgExt);
                     if (TopicValidator.RMQ_SYS_TRANS_HALF_TOPIC.equals(msgInner.getTopic())) {
                         log.error("[BUG] the real topic of schedule msg is {}, discard the msg. msg={}",
@@ -457,7 +463,7 @@ public class ScheduleMessageService extends ConfigManager {
                     }
 
                     boolean deliverSuc;
-                    // 投递消息
+                    // 重新投递消息
                     if (ScheduleMessageService.this.enableAsyncDeliver) {
                         deliverSuc = this.asyncDeliver(msgInner, msgExt.getMsgId(), offset, offsetPy, sizePy);
                     } else {

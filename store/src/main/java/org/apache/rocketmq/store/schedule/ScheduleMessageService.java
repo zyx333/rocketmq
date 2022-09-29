@@ -149,13 +149,14 @@ public class ScheduleMessageService extends ConfigManager {
 
                 if (timeDelay != null) {
                     if (this.enableAsyncDeliver) {
+                        // 处理异步投递消息的结果
                         this.handleExecutorService.schedule(new HandlePutResultTask(level), FIRST_DELAY_TIME, TimeUnit.MILLISECONDS);
                     }
                     this.deliverExecutorService.schedule(new DeliverDelayedMessageTimerTask(level, offset), FIRST_DELAY_TIME, TimeUnit.MILLISECONDS);
                 }
             }
 
-            // 每隔10s，将延迟消息信息持久化到磁盘
+            // 每隔10s，将延迟消息消费进度持久化到磁盘
             this.deliverExecutorService.scheduleAtFixedRate(new Runnable() {
 
                 @Override
@@ -392,6 +393,7 @@ public class ScheduleMessageService extends ConfigManager {
                 ScheduleMessageService.this.defaultMessageStore.findConsumeQueue(TopicValidator.RMQ_SYS_SCHEDULE_TOPIC,
                     delayLevel2QueueId(delayLevel));
 
+            // 查不到队列则说明当前没有该延时级别的任务，直接返回；并创建下一次任务
             if (cq == null) {
                 this.scheduleNextTimerTask(this.offset, DELAY_FOR_A_WHILE);
                 return;
@@ -441,7 +443,7 @@ public class ScheduleMessageService extends ConfigManager {
                     long deliverTimestamp = this.correctDeliverTimestamp(now, tagsCode);
                     nextOffset = offset + (i / ConsumeQueue.CQ_STORE_UNIT_SIZE);
 
-                    // 消息投递倒计时
+                    // 消息投递倒计时。还没到投递时间，则放到下次任务重执行
                     long countdown = deliverTimestamp - now;
                     if (countdown > 0) {
                         this.scheduleNextTimerTask(nextOffset, DELAY_FOR_A_WHILE);
@@ -507,6 +509,7 @@ public class ScheduleMessageService extends ConfigManager {
             Queue<PutResultProcess> processesQueue = ScheduleMessageService.this.deliverPendingTable.get(this.delayLevel);
 
             //Flow Control
+            // 如果当前队列中的消息超过阈值，则跳过这次投递，等待一段时间后下次投递
             int currentPendingNum = processesQueue.size();
             int maxPendingLimit = ScheduleMessageService.this.defaultMessageStore.getMessageStoreConfig()
                 .getScheduleAsyncDeliverMaxPendingLimit();
@@ -562,6 +565,7 @@ public class ScheduleMessageService extends ConfigManager {
                 try {
                     switch (putResultProcess.getStatus()) {
                         case SUCCESS:
+                            // 投递成功则更新该延迟级别的消费进度
                             ScheduleMessageService.this.updateOffset(this.delayLevel, putResultProcess.getNextOffset());
                             pendingQueue.remove();
                             break;
@@ -573,6 +577,7 @@ public class ScheduleMessageService extends ConfigManager {
                                 return;
                             }
                             log.warn("putResultProcess error, info={}", putResultProcess.toString());
+                            // 失败则重试
                             putResultProcess.onException();
                             break;
                         case SKIP:

@@ -1288,9 +1288,9 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
         Validators.checkMessage(msg, this.defaultMQProducer);
 
-        // 发送half消息
+        // 1. 发送half消息
         SendResult sendResult = null;
-        MessageAccessor.putProperty(msg, MessageConst.PROPERTY_TRANSACTION_PREPARED, "true");
+        MessageAccessor.putProperty(msg, MessageConst.PROPERTY_TRANSACTION_PREPARED, "true"); //  标识事务消息
         MessageAccessor.putProperty(msg, MessageConst.PROPERTY_PRODUCER_GROUP, this.defaultMQProducer.getProducerGroup());
         try {
             sendResult = this.send(msg);
@@ -1298,7 +1298,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             throw new MQClientException("send message Exception", e);
         }
 
-        // 处理half消息的结果
+        // 2. 处理half消息的结果
         LocalTransactionState localTransactionState = LocalTransactionState.UNKNOW;
         Throwable localException = null;
         switch (sendResult.getSendStatus()) {
@@ -1311,6 +1311,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     if (null != transactionId && !"".equals(transactionId)) {
                         msg.setTransactionId(transactionId);
                     }
+                    // 2.1 执行本地事务
                     if (null != localTransactionExecuter) {
                         localTransactionState = localTransactionExecuter.executeLocalTransactionBranch(msg, arg);
                     } else if (transactionListener != null) {
@@ -1342,7 +1343,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         }
 
         try {
-            // 结束事务，提交或回滚
+            // 3. 结束事务，根据本地事务结果提交或回滚事务
             this.endTransaction(msg, sendResult, localTransactionState, localException);
         } catch (Exception e) {
             log.warn("local transaction execute " + localTransactionState + ", but end broker transaction failed", e);

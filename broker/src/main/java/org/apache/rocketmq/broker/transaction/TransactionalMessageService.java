@@ -64,6 +64,7 @@ public interface TransactionalMessageService {
     OperationResult rollbackMessage(EndTransactionRequestHeader requestHeader);
 
     /**
+     * 检查producer端本地事务的状态
      * Traverse uncommitted/unroll back half message and send check back request to producer to obtain transaction
      * status.
      *

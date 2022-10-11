@@ -340,6 +340,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     LocalTransactionState localTransactionState = LocalTransactionState.UNKNOW;
                     Throwable exception = null;
                     try {
+                        // 检查本地事务的状态
                         if (transactionCheckListener != null) {
                             localTransactionState = transactionCheckListener.checkLocalTransactionState(message);
                         } else if (transactionListener != null) {
@@ -362,6 +363,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                 }
             }
 
+            // 处理本地事务的结果
             private void processTransactionState(
                 final LocalTransactionState localTransactionState,
                 final String producerGroup,

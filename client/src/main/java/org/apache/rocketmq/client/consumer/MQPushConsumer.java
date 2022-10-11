@@ -41,7 +41,7 @@ public interface MQPushConsumer extends MQConsumer {
     @Deprecated
     void registerMessageListener(MessageListener messageListener);
 
-    // 注册表发消息监听器
+    // 注册并发消息监听器
     void registerMessageListener(final MessageListenerConcurrently messageListener);
 
     // 注册顺序消费事件监听器

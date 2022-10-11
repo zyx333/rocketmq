@@ -197,14 +197,17 @@ public class TransactionalMessageBridge {
     }
 
     public CompletableFuture<PutMessageResult> asyncPutHalfMessage(MessageExtBrokerInner messageInner) {
+        // 存储半消息
         return store.asyncPutMessage(parseHalfMessageInner(messageInner));
     }
 
     // 转换消息topic、queue信息
     private MessageExtBrokerInner parseHalfMessageInner(MessageExtBrokerInner msgInner) {
+        // 保存原始的topic和队列信息
         MessageAccessor.putProperty(msgInner, MessageConst.PROPERTY_REAL_TOPIC, msgInner.getTopic());
         MessageAccessor.putProperty(msgInner, MessageConst.PROPERTY_REAL_QUEUE_ID,
             String.valueOf(msgInner.getQueueId()));
+        // 移除事务标记
         msgInner.setSysFlag(
             MessageSysFlag.resetTransactionValue(msgInner.getSysFlag(), MessageSysFlag.TRANSACTION_NOT_TYPE));
         // 半事务消息都放到指定的topic里

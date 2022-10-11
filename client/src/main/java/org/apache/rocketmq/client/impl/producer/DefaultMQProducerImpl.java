@@ -1283,12 +1283,13 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         final LocalTransactionExecuter localTransactionExecuter, final Object arg)
         throws MQClientException {
         TransactionListener transactionListener = getCheckListener();
+        // 新旧两种事务监听器的兼容，至少要存在一个
         if (null == localTransactionExecuter && null == transactionListener) {
             throw new MQClientException("tranExecutor is null", null);
         }
 
         // ignore DelayTimeLevel parameter
-        // 事务消息忽略延迟
+        // 事务消息不支持设置延迟
         if (msg.getDelayTimeLevel() != 0) {
             MessageAccessor.clearProperty(msg, MessageConst.PROPERTY_DELAY_TIME_LEVEL);
         }
@@ -1297,7 +1298,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
 
         // 1. 发送half消息
         SendResult sendResult = null;
-        MessageAccessor.putProperty(msg, MessageConst.PROPERTY_TRANSACTION_PREPARED, "true"); //  标识事务消息
+        MessageAccessor.putProperty(msg, MessageConst.PROPERTY_TRANSACTION_PREPARED, "true"); //  标识半事务消息
         MessageAccessor.putProperty(msg, MessageConst.PROPERTY_PRODUCER_GROUP, this.defaultMQProducer.getProducerGroup());
         try {
             sendResult = this.send(msg);
@@ -1318,7 +1319,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                     if (null != transactionId && !"".equals(transactionId)) {
                         msg.setTransactionId(transactionId);
                     }
-                    // 2.1 执行本地事务
+                    // 2.1 半消息发送成功，执行本地事务
                     if (null != localTransactionExecuter) {
                         localTransactionState = localTransactionExecuter.executeLocalTransactionBranch(msg, arg);
                     } else if (transactionListener != null) {
@@ -1343,6 +1344,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             case FLUSH_DISK_TIMEOUT:
             case FLUSH_SLAVE_TIMEOUT:
             case SLAVE_NOT_AVAILABLE:
+                // 发送失败则不执行本地事务，回滚事务消息
                 localTransactionState = LocalTransactionState.ROLLBACK_MESSAGE;
                 break;
             default:
@@ -1386,9 +1388,11 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             id = MessageDecoder.decodeMessageId(sendResult.getMsgId());
         }
         String transactionId = sendResult.getTransactionId();
+        // 提交消息的broker与半消息发送的broker保持一致
         final String brokerAddr = this.mQClientFactory.findBrokerAddressInPublish(sendResult.getMessageQueue().getBrokerName());
         EndTransactionRequestHeader requestHeader = new EndTransactionRequestHeader();
         requestHeader.setTransactionId(transactionId);
+        // 消息在内部topic的偏移量
         requestHeader.setCommitLogOffset(id.getOffset());
         switch (localTransactionState) {
             case COMMIT_MESSAGE:
@@ -1408,6 +1412,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
         requestHeader.setProducerGroup(this.defaultMQProducer.getProducerGroup());
         requestHeader.setTranStateTableOffset(sendResult.getQueueOffset());
         requestHeader.setMsgId(sendResult.getMsgId());
+        // 本地事务异常信息
         String remark = localException != null ? ("executeLocalTransactionBranch exception: " + localException.toString()) : null;
         // oneWay方式提交消息
         this.mQClientFactory.getMQClientAPIImpl().endTransactionOneway(brokerAddr, requestHeader, remark,

@@ -101,6 +101,7 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
         PutMessageResult putMessageResult = putBackToHalfQueueReturnResult(msgExt);
         if (putMessageResult != null
             && putMessageResult.getPutMessageStatus() == PutMessageStatus.PUT_OK) {
+            // 发送成功后，将消息的偏移量设置为重新存入的偏移量。
             msgExt.setQueueOffset(
                 putMessageResult.getAppendMessageResult().getLogicsOffset());
             msgExt.setCommitLogOffset(
@@ -150,6 +151,7 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
                 // 已经处理完的op队列的消息偏移量。主要用于更新op队列的起始偏移量
                 List<Long> doneOpOffset = new ArrayList<>();
                 HashMap<Long, Long> removeMap = new HashMap<>();
+                // 避免重复调用回查接口
                 PullResult pullResult = fillOpRemoveMap(removeMap, opQueue, opOffset, halfOffset, doneOpOffset);
                 if (null == pullResult) {
                     log.error("The queue={} check msgOffset={} with opOffset={} failed, pullResult is null",
@@ -158,8 +160,8 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
                 }
                 // single thread
                 int getMessageNullCount = 1;
-                long newOffset = halfOffset;
-                long i = halfOffset;
+                long newOffset = halfOffset; //  半消息队列的处理进度
+                long i = halfOffset; // 当前处理消息的偏移量
                 while (true) {
                     // 每次回查消息的时间限制，最多60s
                     if (System.currentTimeMillis() - startTime > MAX_PROCESS_TIME_LIMIT) {
@@ -229,13 +231,15 @@ public class TransactionalMessageServiceImpl implements TransactionalMessageServ
                         }
                         List<MessageExt> opMsg = pullResult.getMsgFoundList();
                         // 判断是否需要回查
-                        //
+                        // 需要回查的场景：1. op队列中没有该消息，且消息提交时间已超过回查阈值checkImmunityTime；
+                        // 2.op队列不为空，且最后一条队列的存储时间超过transactionTimeout
                         boolean isNeedCheck = (opMsg == null && valueOfCurrentMinusBorn > checkImmunityTime)
                             || (opMsg != null && (opMsg.get(opMsg.size() - 1).getBornTimestamp() - startTime > transactionTimeout))
                             || (valueOfCurrentMinusBorn <= -1);
 
                         if (isNeedCheck) {
-                            // 将消息重新写回half队列
+                            // 如果需要发送回查消息，将消息重新写回half队列
+                            //
                             if (!putBackHalfMsgQueue(msgExt, i)) {
                                 continue;
                             }

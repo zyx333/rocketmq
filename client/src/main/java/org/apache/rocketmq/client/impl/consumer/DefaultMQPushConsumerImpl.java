@@ -855,6 +855,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
     //构建订阅信息SubscriptionData
     private void copySubscription() throws MQClientException {
         try {
+            // 订阅信息来源1
             Map<String, String> sub = this.defaultMQPushConsumer.getSubscription();
             if (sub != null) {
                 for (final Map.Entry<String, String> entry : sub.entrySet()) {
@@ -873,7 +874,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                 case BROADCASTING:
                     break;
                 case CLUSTERING:
-                    // 重试队列的订阅信息
+                    // 订阅信息来源2：重试队列
                     // 重试队列以消费组为单位
                     final String retryTopic = MixAll.getRetryTopic(this.defaultMQPushConsumer.getConsumerGroup());
                     SubscriptionData subscriptionData = FilterAPI.buildSubscriptionData(retryTopic, SubscriptionData.SUB_ALL);

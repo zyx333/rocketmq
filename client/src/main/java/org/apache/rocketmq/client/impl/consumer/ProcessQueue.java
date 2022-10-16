@@ -38,6 +38,7 @@ import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.protocol.body.ProcessQueueInfo;
 
 /**
+ * 可以看做是MessageQueue在消费端的快照
  * Queue consumption snapshot
  */
 public class ProcessQueue {
@@ -139,6 +140,7 @@ public class ProcessQueue {
         }
     }
 
+    // PullMessageService拉取消息后使用该方法将消息添加的processQueue
     public boolean putMessage(final List<MessageExt> msgs) {
         boolean dispatchToConsume = false;
         try {

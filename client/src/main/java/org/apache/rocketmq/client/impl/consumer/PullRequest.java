@@ -24,6 +24,7 @@ public class PullRequest {
     // 待拉取消息队列
     private MessageQueue messageQueue;
     // 消息处理队列
+    // 从broke拉取到的消息先存入此队列，然后再提交到消费者消费线程进行消费
     private ProcessQueue processQueue;
     // 待拉取的消息队列偏移量
     private long nextOffset;

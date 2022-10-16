@@ -57,6 +57,7 @@ public class PullMessageService extends ServiceThread {
         }
     }
 
+    // 往拉取队列添加请求
     public void executePullRequestImmediately(final PullRequest pullRequest) {
         try {
             this.pullRequestQueue.put(pullRequest);

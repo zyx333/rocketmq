@@ -762,7 +762,7 @@ public class MQClientAPIImpl {
                 RemotingCommand response = responseFuture.getResponseCommand();
                 if (response != null) {
                     try {
-                        // 转换错误码
+                        // 转换错误码，解析响应结果
                         PullResult pullResult = MQClientAPIImpl.this.processPullResponse(response, addr);
                         assert pullResult != null;
                         pullCallback.onSuccess(pullResult);

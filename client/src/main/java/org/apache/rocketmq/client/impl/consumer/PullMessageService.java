@@ -95,6 +95,7 @@ public class PullMessageService extends ServiceThread {
         while (!this.isStopped()) {
             try {
                 // 了解请求是什么时候加加入队列的
+                // 阻塞队列
                 PullRequest pullRequest = this.pullRequestQueue.take();
                 //拉取消息
                 this.pullMessage(pullRequest);

@@ -308,6 +308,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
             }
         }
 
+        // 获取主题的订阅信息
         final SubscriptionData subscriptionData = this.rebalanceImpl.getSubscriptionInner().get(pullRequest.getMessageQueue().getTopic());
         if (null == subscriptionData) {
             this.executePullRequestLater(pullRequest, pullTimeDelayMillsWhenException);
@@ -328,13 +329,15 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                     switch (pullResult.getPullStatus()) {
                         case FOUND:
                             long prevRequestOffset = pullRequest.getNextOffset();
-                            pullRequest.setNextOffset(pullResult.getNextBeginOffset());
+                            pullRequest.setNextOffset(pullResult.getNextBeginOffset()); // 更新下次拉取的偏移量
                             long pullRT = System.currentTimeMillis() - beginTimestamp;
                             DefaultMQPushConsumerImpl.this.getConsumerStatsManager().incPullRT(pullRequest.getConsumerGroup(),
                                 pullRequest.getMessageQueue().getTopic(), pullRT);
 
                             long firstMsgOffset = Long.MAX_VALUE;
                             if (pullResult.getMsgFoundList() == null || pullResult.getMsgFoundList().isEmpty()) {
+                                // 因为服务端只验证了消息tag的哈希，所以客户端可能把消息过滤掉，导致msgFoundList为空
+                                // 拉取到的消息为空时，立即把请求再次放到拉取队列中
                                 DefaultMQPushConsumerImpl.this.executePullRequestImmediately(pullRequest);
                             } else {
                                 firstMsgOffset = pullResult.getMsgFoundList().get(0).getQueueOffset();
@@ -345,6 +348,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                                 // 把消息放到处理队列processQueue中
                                 boolean dispatchToConsume = processQueue.putMessage(pullResult.getMsgFoundList());
                                 // 将消息提交到consumeMessageService中进行消费. 异步执行，提交消息到消费线程后立即返回
+                                // 提交之后消息并没有完成消费
                                 DefaultMQPushConsumerImpl.this.consumeMessageService.submitConsumeRequest(
                                     pullResult.getMsgFoundList(),
                                     processQueue,
@@ -374,6 +378,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
                         case NO_MATCHED_MSG:
                             pullRequest.setNextOffset(pullResult.getNextBeginOffset());
 
+                            // 拉取异常时校对拉取偏移量
                             DefaultMQPushConsumerImpl.this.correctTagsOffset(pullRequest);
 
                             DefaultMQPushConsumerImpl.this.executePullRequestImmediately(pullRequest);

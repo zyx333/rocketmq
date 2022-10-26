@@ -76,6 +76,7 @@ public class PullAPIWrapper {
             ByteBuffer byteBuffer = ByteBuffer.wrap(pullResultExt.getMessageBinary());
             List<MessageExt> msgList = MessageDecoder.decodes(byteBuffer);
 
+            // tag模式过滤消息
             List<MessageExt> msgListFilterAgain = msgList;
             if (!subscriptionData.getTagsSet().isEmpty() && !subscriptionData.isClassFilterMode()) {
                 msgListFilterAgain = new ArrayList<MessageExt>(msgList.size());
@@ -195,7 +196,7 @@ public class PullAPIWrapper {
             requestHeader.setExpressionType(expressionType);
 
             String brokerAddr = findBrokerResult.getBrokerAddr();
-            // 如果是类过滤模式，则获取FilterServer地址
+            // 如果是类过滤模式，则获取FilterServer地址，并从其拉取消息
             if (PullSysFlag.hasClassFilterFlag(sysFlagInner)) {
                 brokerAddr = computePullFromWhichFilterServer(mq.getTopic(), brokerAddr);
             }

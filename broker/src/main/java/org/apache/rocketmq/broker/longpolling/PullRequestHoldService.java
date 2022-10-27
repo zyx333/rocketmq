@@ -134,7 +134,7 @@ public class PullRequestHoldService extends ServiceThread {
                         newestOffset = this.brokerController.getMessageStore().getMaxOffsetInQueue(topic, queueId);
                     }
 
-                    // 消息队列的最大偏移量大于待拉取偏移量
+                    // 消息队列的最大偏移量大于待拉取偏移量，说明有新消息到达
                     if (newestOffset > request.getPullFromThisOffset()) {
                         // 消息是否匹配
                         boolean match = request.getMessageFilter().isMatchedByConsumeQueue(tagsCode,

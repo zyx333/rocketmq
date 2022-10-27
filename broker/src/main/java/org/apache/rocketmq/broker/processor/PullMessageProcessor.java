@@ -417,6 +417,7 @@ public class PullMessageProcessor extends AsyncNettyRequestProcessor implements 
                     }
                     break;
                 case ResponseCode.PULL_NOT_FOUND:
+                    // 消息拉取长轮询相关实现
 
                     if (brokerAllowSuspend && hasSuspendFlag) {
                         // 开启长轮询时的等待时间
@@ -570,6 +571,7 @@ public class PullMessageProcessor extends AsyncNettyRequestProcessor implements 
             @Override
             public void run() {
                 try {
+                    // 处理拉取消息请求
                     final RemotingCommand response = PullMessageProcessor.this.processRequest(channel, request, false);
 
                     if (response != null) {

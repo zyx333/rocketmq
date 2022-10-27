@@ -29,6 +29,10 @@ import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
 import org.apache.rocketmq.store.ConsumeQueueExt;
 
+/**
+ * 消息拉取长轮询的实现。
+ * 主要有两种方式来实现消息的及时拉取：1）run方法中每隔5s，检查新消息是否到达；2）CommitLog文件更新时，主动调用notifyMessageArriving()通知新消息到达。
+ */
 public class PullRequestHoldService extends ServiceThread {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.BROKER_LOGGER_NAME);
     protected static final String TOPIC_QUEUEID_SEPARATOR = "@";

@@ -349,6 +349,7 @@ public abstract class RebalanceImpl {
 
             if (mq.getTopic().equals(topic)) {
                 if (!mqSet.contains(mq)) {
+                    // 停止队列消费
                     pq.setDropped(true);
                     if (this.removeUnnecessaryMessageQueue(mq, pq)) {
                         it.remove();
@@ -415,6 +416,7 @@ public abstract class RebalanceImpl {
             }
         }
 
+        // 将队列的pullRequest加入PullMessageService的请求队列
         this.dispatchPullRequest(pullRequestList);
 
         return changed;

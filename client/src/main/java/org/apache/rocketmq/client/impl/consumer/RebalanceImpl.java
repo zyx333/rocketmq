@@ -244,6 +244,7 @@ public abstract class RebalanceImpl {
     private void rebalanceByTopic(final String topic, final boolean isOrder) {
         switch (messageModel) {
             case BROADCASTING: {
+                // 广播模式只检查队列信息是否有变化，变化则更新
                 Set<MessageQueue> mqSet = this.topicSubscribeInfoTable.get(topic);
                 if (mqSet != null) {
                     boolean changed = this.updateProcessQueueTableInRebalance(topic, mqSet, isOrder);
@@ -341,6 +342,7 @@ public abstract class RebalanceImpl {
         final boolean isOrder) {
         boolean changed = false;
 
+        // 当前负载队列
         Iterator<Entry<MessageQueue, ProcessQueue>> it = this.processQueueTable.entrySet().iterator();
         while (it.hasNext()) {
             Entry<MessageQueue, ProcessQueue> next = it.next();
@@ -349,7 +351,7 @@ public abstract class RebalanceImpl {
 
             if (mq.getTopic().equals(topic)) {
                 if (!mqSet.contains(mq)) {
-                    // 停止队列消费
+                    // 新分配的消费队列不包含此队列，则停止队列消费
                     pq.setDropped(true);
                     if (this.removeUnnecessaryMessageQueue(mq, pq)) {
                         it.remove();
@@ -357,6 +359,7 @@ public abstract class RebalanceImpl {
                         log.info("doRebalance, {}, remove unnecessary mq, {}", consumerGroup, mq);
                     }
                 } else if (pq.isPullExpired()) {
+                    // 推和拉模式的不同处理，为什么？？
                     switch (this.consumeType()) {
                         case CONSUME_ACTIVELY:
                             break;
@@ -388,6 +391,7 @@ public abstract class RebalanceImpl {
                 this.removeDirtyOffset(mq);
                 ProcessQueue pq = new ProcessQueue();
 
+                //计算消费进度
                 long nextOffset = -1L;
                 try {
                     nextOffset = this.computePullFromWhereWithException(mq);

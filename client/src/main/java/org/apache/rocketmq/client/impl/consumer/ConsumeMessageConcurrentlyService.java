@@ -318,7 +318,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
             this.defaultMQPushConsumerImpl.getOffsetStore().updateOffset(consumeRequest.getMessageQueue(), offset, true);
         }
 
-        // 注意：即使消息消费失败，消费进度也会向前推进。因为消费失败的消息，会通过sendMessageBack方法重新发送到broker，创建一条完全相同的消息。
+        // 注意：即使消息消费失败，消费进度也会向前推进。因为消息消费失败后，会创建一条与原消息属性相同的消息，消息体存储了原消息的id，重新进行消费。？？todo
     }
 
     public ConsumerStatsManager getConsumerStatsManager() {

@@ -97,6 +97,7 @@ public class MixAll {
         return wsAddr;
     }
 
+    // 重试队列以消费组为单位
     public static String getRetryTopic(final String consumerGroup) {
         return RETRY_GROUP_TOPIC_PREFIX + consumerGroup;
     }

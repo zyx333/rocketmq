@@ -199,6 +199,7 @@ public class ProcessQueue {
         return 0;
     }
 
+    // 返回的偏移量为从ProcessQueue移除已消费的消息后，ProcessQueue中剩余的消息最小偏移量
     public long removeMessage(final List<MessageExt> msgs) {
         long result = -1;
         final long now = System.currentTimeMillis();

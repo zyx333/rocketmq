@@ -292,6 +292,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
                 // 如果消费失败，ackIndex = -1，则下面的循环会执行，执行sendMessageBack逻辑
                 for (int i = ackIndex + 1; i < consumeRequest.getMsgs().size(); i++) {
                     MessageExt msg = consumeRequest.getMsgs().get(i);
+                    // 消息发送到broker重新消费
                     boolean result = this.sendMessageBack(msg, context);
                     if (!result) {
                         msg.setReconsumeTimes(msg.getReconsumeTimes() + 1);
@@ -310,10 +311,14 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
                 break;
         }
 
+        // 从ProcessQueue移除这一批消息
         long offset = consumeRequest.getProcessQueue().removeMessage(consumeRequest.getMsgs());
         if (offset >= 0 && !consumeRequest.getProcessQueue().isDropped()) {
+            // 更新消息消费进度
             this.defaultMQPushConsumerImpl.getOffsetStore().updateOffset(consumeRequest.getMessageQueue(), offset, true);
         }
+
+        // 注意：即使消息消费失败，消费进度也会向前推进。因为消费失败的消息，会通过sendMessageBack方法重新发送到broker，创建一条完全相同的消息。
     }
 
     public ConsumerStatsManager getConsumerStatsManager() {

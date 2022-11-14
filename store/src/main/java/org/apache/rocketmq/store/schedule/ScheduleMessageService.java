@@ -350,6 +350,7 @@ public class ScheduleMessageService extends ConfigManager {
         return msgInner;
     }
 
+    // 延迟队列的执行任务
     class DeliverDelayedMessageTimerTask implements Runnable {
         private final int delayLevel;
         // consumeQueue里的逻辑偏移量
@@ -381,6 +382,7 @@ public class ScheduleMessageService extends ConfigManager {
             long result = deliverTimestamp;
 
             long maxTimestamp = now + ScheduleMessageService.this.delayLevelTable.get(this.delayLevel);
+            // 正常情况下写入此延时队列的消息投递时间不会比maxTimestamp大。这里用于处理延迟时间有误的情况
             if (deliverTimestamp > maxTimestamp) {
                 result = now;
             }
@@ -548,6 +550,7 @@ public class ScheduleMessageService extends ConfigManager {
         }
     }
 
+    // 处理异步投递任务的结果
     public class HandlePutResultTask implements Runnable {
         private final int delayLevel;
 

@@ -239,7 +239,7 @@ public class PullMessageProcessor extends AsyncNettyRequestProcessor implements 
             messageFilter = new ExpressionMessageFilter(subscriptionData, consumerFilterData,
                 this.brokerController.getConsumerFilterManager());
         }
-        // 前面全是做的各种校验
+        /** 前面全是做的各种校验 **/
 
         // 从队列中查找消息
         final GetMessageResult getMessageResult =

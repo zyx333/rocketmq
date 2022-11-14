@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,17 +52,12 @@ public class IntegrationTestBase {
     protected static final List<BrokerController> BROKER_CONTROLLERS = new ArrayList<>();
     protected static final List<NamesrvController> NAMESRV_CONTROLLERS = new ArrayList<>();
     protected static int topicCreateTime = (int) TimeUnit.SECONDS.toSeconds(30);
-    public static volatile int COMMIT_LOG_SIZE = 1024 * 1024 * 100;
+    public static volatile int commitLogSize = 1024 * 1024 * 100;
     protected static final int INDEX_NUM = 1000;
 
-    private static final AtomicInteger port = new AtomicInteger(40000);
-
-    public static synchronized int nextPort() {
-        return port.addAndGet(random.nextInt(10) + 10);
-    }
-    protected static Random random = new Random();
-
     static {
+
+        System.setProperty("rocketmq.client.logRoot", System.getProperty("java.io.tmpdir"));
 
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
@@ -99,7 +93,7 @@ public class IntegrationTestBase {
     }
 
     public static String createBaseDir() {
-        String baseDir = System.getProperty("user.home") + SEP + "unitteststore-" + UUID.randomUUID();
+        String baseDir = System.getProperty("java.io.tmpdir") + SEP + "unitteststore-" + UUID.randomUUID();
         final File file = new File(baseDir);
         if (file.exists()) {
             logger.info(String.format("[%s] has already existed, please back up and remove it for integration tests", baseDir));
@@ -116,7 +110,7 @@ public class IntegrationTestBase {
         namesrvConfig.setKvConfigPath(baseDir + SEP + "namesrv" + SEP + "kvConfig.json");
         namesrvConfig.setConfigStorePath(baseDir + SEP + "namesrv" + SEP + "namesrv.properties");
 
-        nameServerNettyServerConfig.setListenPort(nextPort());
+        nameServerNettyServerConfig.setListenPort(0);
         NamesrvController namesrvController = new NamesrvController(namesrvConfig, nameServerNettyServerConfig);
         try {
             Truth.assertThat(namesrvController.initialize()).isTrue();
@@ -142,7 +136,7 @@ public class IntegrationTestBase {
         brokerConfig.setLoadBalancePollNameServerInterval(500);
         storeConfig.setStorePathRootDir(baseDir);
         storeConfig.setStorePathCommitLog(baseDir + SEP + "commitlog");
-        storeConfig.setMappedFileSizeCommitLog(COMMIT_LOG_SIZE);
+        storeConfig.setMappedFileSizeCommitLog(commitLogSize);
         storeConfig.setMaxIndexNum(INDEX_NUM);
         storeConfig.setMaxHashSlotNum(INDEX_NUM * 4);
         storeConfig.setDeleteWhen("01;02;03;04;05;06;07;08;09;10;11;12;13;14;15;16;17;18;19;20;21;22;23;00");
@@ -154,8 +148,8 @@ public class IntegrationTestBase {
     public static BrokerController createAndStartBroker(MessageStoreConfig storeConfig, BrokerConfig brokerConfig) {
         NettyServerConfig nettyServerConfig = new NettyServerConfig();
         NettyClientConfig nettyClientConfig = new NettyClientConfig();
-        nettyServerConfig.setListenPort(nextPort());
-        storeConfig.setHaListenPort(nextPort());
+        nettyServerConfig.setListenPort(0);
+        storeConfig.setHaListenPort(0);
         BrokerController brokerController = new BrokerController(brokerConfig, nettyServerConfig, nettyClientConfig, storeConfig);
         try {
             Truth.assertThat(brokerController.initialize()).isTrue();

@@ -18,6 +18,11 @@ package org.apache.rocketmq.broker;
 
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
@@ -26,13 +31,11 @@ import org.apache.rocketmq.common.BrokerConfig;
 import org.apache.rocketmq.common.MQVersion;
 import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.constant.LoggerName;
+import org.apache.rocketmq.common.utils.NetworkUtil;
 import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.logging.InternalLoggerFactory;
-import org.apache.rocketmq.remoting.common.RemotingUtil;
-import org.apache.rocketmq.remoting.common.TlsMode;
 import org.apache.rocketmq.remoting.netty.NettyClientConfig;
 import org.apache.rocketmq.remoting.netty.NettyServerConfig;
-import org.apache.rocketmq.remoting.netty.TlsSystemConfig;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.srvutil.ServerUtil;
 import org.apache.rocketmq.store.config.BrokerRole;
@@ -40,20 +43,12 @@ import org.apache.rocketmq.store.config.MessageStoreConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.util.Properties;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.apache.rocketmq.remoting.netty.TlsSystemConfig.TLS_ENABLE;
-
 public class BrokerStartup {
     public static Properties properties = null;
     public static CommandLine commandLine = null;
     public static String configFile = null;
     public static InternalLogger log;
-    public static SystemConfigFileHelper configFileHelper = new SystemConfigFileHelper();
+    public static final SystemConfigFileHelper CONFIG_FILE_HELPER = new SystemConfigFileHelper();
 
     public static void main(String[] args) {
         start(createBrokerController(args));
@@ -103,9 +98,6 @@ public class BrokerStartup {
             final BrokerConfig brokerConfig = new BrokerConfig();
             final NettyServerConfig nettyServerConfig = new NettyServerConfig();
             final NettyClientConfig nettyClientConfig = new NettyClientConfig();
-
-            nettyClientConfig.setUseTLS(Boolean.parseBoolean(System.getProperty(TLS_ENABLE,
-                String.valueOf(TlsSystemConfig.tlsMode == TlsMode.ENFORCING))));
             nettyServerConfig.setListenPort(10911);
             final MessageStoreConfig messageStoreConfig = new MessageStoreConfig();
 
@@ -117,10 +109,10 @@ public class BrokerStartup {
             if (commandLine.hasOption('c')) {
                 String file = commandLine.getOptionValue('c');
                 if (file != null) {
-                    configFileHelper.setFile(file);
+                    CONFIG_FILE_HELPER.setFile(file);
                     configFile = file;
                     BrokerPathConfigHelper.setBrokerConfigPath(file);
-                    properties = configFileHelper.loadConfig();
+                    properties = CONFIG_FILE_HELPER.loadConfig();
                 }
             }
 
@@ -144,7 +136,7 @@ public class BrokerStartup {
                 try {
                     String[] addrArray = namesrvAddr.split(";");
                     for (String addr : addrArray) {
-                        RemotingUtil.string2SocketAddress(addr);
+                        NetworkUtil.string2SocketAddress(addr);
                     }
                 } catch (Exception e) {
                     System.out.printf(

@@ -16,6 +16,7 @@
  */
 package org.apache.rocketmq.client.trace;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.rocketmq.client.AccessChannel;
 import org.apache.rocketmq.client.common.ThreadLocalIndex;
 import org.apache.rocketmq.client.exception.MQClientException;
@@ -87,12 +87,12 @@ public class AsyncTraceDispatcher implements TraceDispatcher {
         this.pollingTimeMil = 100;
         this.waitTimeThresholdMil = 500;
         this.discardCount = new AtomicLong(0L);
-        this.traceContextQueue = new ArrayBlockingQueue<TraceContext>(1024);
+        this.traceContextQueue = new ArrayBlockingQueue<>(1024);
         this.taskQueueByTopic = new HashMap();
         this.group = group;
         this.type = type;
 
-        this.appenderQueue = new ArrayBlockingQueue<Runnable>(queueSize);
+        this.appenderQueue = new ArrayBlockingQueue<>(queueSize);
         if (!UtilAll.isBlank(traceTopicName)) {
             this.traceTopicName = traceTopicName;
         } else {
@@ -378,7 +378,7 @@ public class AsyncTraceDispatcher implements TraceDispatcher {
         @Override
         public void run() {
             StringBuilder buffer = new StringBuilder(1024);
-            Set<String> keySet = new HashSet<String>();
+            Set<String> keySet = new HashSet<>();
             for (TraceTransferBean bean : traceTransferBeanList) {
                 keySet.addAll(bean.getTransKey());
                 buffer.append(bean.getTransData());
@@ -394,7 +394,7 @@ public class AsyncTraceDispatcher implements TraceDispatcher {
          * @param traceTopic the topic which message trace data will send to
          */
         private void sendTraceDataByMQ(Set<String> keySet, final String data, String traceTopic) {
-            final Message message = new Message(traceTopic, data.getBytes());
+            final Message message = new Message(traceTopic, data.getBytes(StandardCharsets.UTF_8));
             // Keyset of message trace includes msgId of or original message
             message.setKeys(keySet);
             try {
@@ -418,17 +418,14 @@ public class AsyncTraceDispatcher implements TraceDispatcher {
                         @Override
                         public MessageQueue select(List<MessageQueue> mqs, Message msg, Object arg) {
                             Set<String> brokerSet = (Set<String>) arg;
-                            List<MessageQueue> filterMqs = new ArrayList<MessageQueue>();
+                            List<MessageQueue> filterMqs = new ArrayList<>();
                             for (MessageQueue queue : mqs) {
                                 if (brokerSet.contains(queue.getBrokerName())) {
                                     filterMqs.add(queue);
                                 }
                             }
                             int index = sendWhichQueue.incrementAndGet();
-                            int pos = Math.abs(index) % filterMqs.size();
-                            if (pos < 0) {
-                                pos = 0;
-                            }
+                            int pos = index % filterMqs.size();
                             return filterMqs.get(pos);
                         }
                     }, traceBrokerSet, callback);
@@ -440,7 +437,7 @@ public class AsyncTraceDispatcher implements TraceDispatcher {
         }
 
         private Set<String> tryGetMessageQueueBrokerSet(DefaultMQProducerImpl producer, String topic) {
-            Set<String> brokerSet = new HashSet<String>();
+            Set<String> brokerSet = new HashSet<>();
             TopicPublishInfo topicPublishInfo = producer.getTopicPublishInfoTable().get(topic);
             if (null == topicPublishInfo || !topicPublishInfo.ok()) {
                 producer.getTopicPublishInfoTable().putIfAbsent(topic, new TopicPublishInfo());

@@ -52,7 +52,7 @@ public class Slf4jLoggerFactory extends InternalLoggerFactory {
         private final String loggerSuffix;
         private final Logger defaultLogger;
 
-        private final Map<String, Logger> loggerMap = new HashMap<String, Logger>();
+        private final Map<String, Logger> loggerMap = new HashMap<>();
 
         public Slf4jLogger(String loggerSuffix) {
             this.loggerSuffix = loggerSuffix;
@@ -65,7 +65,7 @@ public class Slf4jLoggerFactory extends InternalLoggerFactory {
                 || loggerSuffix.equals(COMMERCIAL_LOGGER_NAME)) {
                 return defaultLogger;
             }
-            String brokerIdentity = InnerLoggerFactory.brokerIdentity.get();
+            String brokerIdentity = InnerLoggerFactory.BROKER_IDENTITY.get();
             if (brokerIdentity == null) {
                 Matcher m = PATTERN.matcher(Thread.currentThread().getName());
                 if (m.find()) {

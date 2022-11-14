@@ -17,17 +17,23 @@
 
 package org.apache.rocketmq.test.autoswitchrole;
 
+import com.google.common.collect.ImmutableList;
 import java.io.File;
+import java.time.Duration;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import org.apache.rocketmq.broker.BrokerController;
 import org.apache.rocketmq.broker.controller.ReplicasManager;
-import org.apache.rocketmq.common.UtilAll;
 import org.apache.rocketmq.common.ControllerConfig;
+import org.apache.rocketmq.common.UtilAll;
 import org.apache.rocketmq.common.namesrv.NamesrvConfig;
-import org.apache.rocketmq.common.protocol.body.SyncStateSet;
 import org.apache.rocketmq.controller.ControllerManager;
 import org.apache.rocketmq.namesrv.NamesrvController;
 import org.apache.rocketmq.remoting.netty.NettyClientConfig;
 import org.apache.rocketmq.remoting.netty.NettyServerConfig;
+import org.apache.rocketmq.remoting.protocol.body.SyncStateSet;
 import org.apache.rocketmq.store.MappedFileQueue;
 import org.apache.rocketmq.store.MessageStore;
 import org.apache.rocketmq.store.config.BrokerRole;
@@ -35,9 +41,9 @@ import org.apache.rocketmq.store.ha.HAClient;
 import org.apache.rocketmq.store.ha.HAConnectionState;
 import org.apache.rocketmq.store.ha.autoswitch.AutoSwitchHAService;
 import org.apache.rocketmq.store.logfile.MappedFile;
-import org.junit.After;
 import org.junit.Test;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -52,6 +58,8 @@ public class AutoSwitchRoleIntegrationTest extends AutoSwitchRoleBase {
     private String controllerAddress;
     private BrokerController brokerController1;
     private BrokerController brokerController2;
+    protected List<BrokerController> brokerControllerList;
+
 
     public void init(int mappedFileSize) throws Exception {
         super.initialize();
@@ -78,13 +86,14 @@ public class AutoSwitchRoleIntegrationTest extends AutoSwitchRoleBase {
 
         this.brokerController1 = startBroker(this.namesrvAddress, this.controllerAddress, 1, nextPort(), nextPort(), nextPort(), BrokerRole.SYNC_MASTER, mappedFileSize);
         this.brokerController2 = startBroker(this.namesrvAddress, this.controllerAddress, 2, nextPort(), nextPort(), nextPort(), BrokerRole.SLAVE, mappedFileSize);
+        this.brokerControllerList = ImmutableList.of(brokerController1, brokerController2);
+
 
         // Wait slave connecting to master
         assertTrue(waitSlaveReady(this.brokerController2.getMessageStore()));
     }
 
     public void mockData() throws Exception {
-        System.out.println("Begin test");
         final MessageStore messageStore = brokerController1.getMessageStore();
         putMessage(messageStore);
         Thread.sleep(3000);
@@ -99,7 +108,6 @@ public class AutoSwitchRoleIntegrationTest extends AutoSwitchRoleBase {
             if (haClient != null && haClient.getCurrentState().equals(HAConnectionState.TRANSFER)) {
                 return true;
             } else {
-                System.out.println("slave not ready");
                 Thread.sleep(2000);
                 tryTimes++;
             }
@@ -110,6 +118,7 @@ public class AutoSwitchRoleIntegrationTest extends AutoSwitchRoleBase {
     @Test
     public void testCheckSyncStateSet() throws Exception {
         init(defaultFileSize);
+        awaitDispatchMs(6);
         mockData();
 
         // Check sync state set
@@ -117,11 +126,16 @@ public class AutoSwitchRoleIntegrationTest extends AutoSwitchRoleBase {
         SyncStateSet syncStateSet = replicasManager.getSyncStateSet();
         assertEquals(2, syncStateSet.getSyncStateSet().size());
 
-        // Shutdown controller2
-        this.brokerController2.shutdown();
 
-        Thread.sleep(5000);
+        // Shutdown controller2
+        ScheduledExecutorService singleThread = Executors.newSingleThreadScheduledExecutor();
+        while (!singleThread.awaitTermination(6 * 1000, TimeUnit.MILLISECONDS)) {
+            this.brokerController2.shutdown();
+            singleThread.shutdown();
+        }
+
         syncStateSet = replicasManager.getSyncStateSet();
+        shutdown();
         assertEquals(1, syncStateSet.getSyncStateSet().size());
     }
 
@@ -154,6 +168,7 @@ public class AutoSwitchRoleIntegrationTest extends AutoSwitchRoleBase {
 
         // Check slave message
         checkMessage(brokerController1.getMessageStore(), 20, 0);
+        shutdown();
     }
 
     @Test
@@ -170,6 +185,7 @@ public class AutoSwitchRoleIntegrationTest extends AutoSwitchRoleBase {
         putMessage(this.brokerController1.getMessageStore());
         Thread.sleep(3000);
         checkMessage(broker3.getMessageStore(), 20, 0);
+        shutdown();
     }
 
     @Test
@@ -222,13 +238,12 @@ public class AutoSwitchRoleIntegrationTest extends AutoSwitchRoleBase {
         waitSlaveReady(broker4.getMessageStore());
         Thread.sleep(6000);
         checkMessage(broker4.getMessageStore(), 10, 10);
+        shutdown();
     }
 
-    @After
     public void shutdown() throws InterruptedException {
         for (BrokerController controller : this.brokerList) {
             controller.shutdown();
-            System.out.println("Shutdown broker " + controller.getBrokerConfig().getListenPort());
             UtilAll.deleteFile(new File(controller.getMessageStoreConfig().getStorePathRootDir()));
         }
         if (this.namesrvController != null) {
@@ -236,4 +251,24 @@ public class AutoSwitchRoleIntegrationTest extends AutoSwitchRoleBase {
         }
         super.destroy();
     }
+
+    public boolean awaitDispatchMs(long timeMs) throws Exception {
+        await().atMost(Duration.ofSeconds(timeMs)).until(
+            () -> {
+                boolean allOk = true;
+                for (BrokerController brokerController: brokerControllerList) {
+                    if (brokerController.getMessageStore() == null) {
+                        allOk = false;
+                        break;
+                    }
+                }
+                if (allOk) {
+                    return true;
+                }
+                return false;
+            }
+        );
+        return false;
+    }
+
 }

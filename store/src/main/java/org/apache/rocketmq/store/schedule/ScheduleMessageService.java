@@ -436,6 +436,7 @@ public class ScheduleMessageService extends ConfigManager {
                                 tagsCode, offsetPy, sizePy);
                             long msgStoreTime = defaultMessageStore.getCommitLog().pickupStoreTimestamp(offsetPy, sizePy);
                             // 计算消息投递时间：写入时间+延迟时间
+                            // 定时消息的tagsCode保存的是消息需要真实投递的时间戳
                             tagsCode = computeDeliverTimestamp(delayLevel, msgStoreTime);
                         }
                     }

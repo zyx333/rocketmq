@@ -27,14 +27,14 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class SubscriptionData implements Comparable<SubscriptionData> {
-    public final static String SUB_ALL = "*";
-    private boolean classFilterMode = false;
+    public final static String SUB_ALL = "*"; // 表示全匹配
+    private boolean classFilterMode = false; // 是否类过滤模式
     private String topic;
-    private String subString;
-    private Set<String> tagsSet = new HashSet<String>();
-    private Set<Integer> codeSet = new HashSet<Integer>();
+    private String subString; // 消息过滤表达式，以 | 分割的多个tag组成的字符串
+    private Set<String> tagsSet = new HashSet<String>(); // 消息 tag的集合，用于消费端进行消息过滤
+    private Set<Integer> codeSet = new HashSet<Integer>(); // 消息tag hash码的集合
     private long subVersion = System.currentTimeMillis();
-    private String expressionType = ExpressionType.TAG;
+    private String expressionType = ExpressionType.TAG; // 消息过滤类型
 
     @JSONField(serialize = false)
     private String filterClassSource;

@@ -69,6 +69,7 @@ public class ExpressionMessageFilter implements MessageFilter {
 
         // by tags code.
         if (ExpressionType.isTagType(subscriptionData.getExpressionType())) {
+            // 基于tag模式的过滤，在根据ConsumeQueue过滤消息时只对比tag的hash
 
             if (tagsCode == null) {
                 return true;
@@ -124,6 +125,7 @@ public class ExpressionMessageFilter implements MessageFilter {
             return true;
         }
 
+        // 这里如果是tag过滤模式，直接返回TRUE。本方法主要针对SQL92表达式模式
         if (ExpressionType.isTagType(subscriptionData.getExpressionType())) {
             return true;
         }

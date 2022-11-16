@@ -914,6 +914,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
     public void subscribe(String topic, String subExpression) throws MQClientException {
         try {
             SubscriptionData subscriptionData = FilterAPI.buildSubscriptionData(topic, subExpression);
+            // 方便rebalanceImpl进行消息队列负载
             this.rebalanceImpl.getSubscriptionInner().put(topic, subscriptionData);
             if (this.mQClientFactory != null) {
                 this.mQClientFactory.sendHeartbeatToAllBrokerWithLock();

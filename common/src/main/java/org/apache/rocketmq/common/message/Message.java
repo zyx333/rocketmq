@@ -121,6 +121,7 @@ public class Message implements Serializable {
         this.topic = topic;
     }
 
+    // 一个消息只支持设置一个tag
     public String getTags() {
         return this.getProperty(MessageConst.PROPERTY_TAGS);
     }

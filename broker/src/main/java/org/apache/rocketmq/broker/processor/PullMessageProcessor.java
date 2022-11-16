@@ -160,6 +160,7 @@ public class PullMessageProcessor extends AsyncNettyRequestProcessor implements 
                     requestHeader.getTopic(), requestHeader.getSubscription(), requestHeader.getExpressionType()
                 );
                 if (!ExpressionType.isTagType(subscriptionData.getExpressionType())) {
+                    // 非tag过滤模式，则构造consumerFilterData
                     consumerFilterData = ConsumerFilterManager.build(
                         requestHeader.getTopic(), requestHeader.getConsumerGroup(), requestHeader.getSubscription(),
                         requestHeader.getExpressionType(), requestHeader.getSubVersion()
@@ -233,9 +234,11 @@ public class PullMessageProcessor extends AsyncNettyRequestProcessor implements 
         // 构建消息过滤器
         MessageFilter messageFilter;
         if (this.brokerController.getBrokerConfig().isFilterSupportRetry()) {
+            // 支持对重试主题进行过滤
             messageFilter = new ExpressionForRetryMessageFilter(subscriptionData, consumerFilterData,
                 this.brokerController.getConsumerFilterManager());
         } else {
+            // 不支持对重试主题进行过滤
             messageFilter = new ExpressionMessageFilter(subscriptionData, consumerFilterData,
                 this.brokerController.getConsumerFilterManager());
         }

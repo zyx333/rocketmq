@@ -687,6 +687,7 @@ public class DefaultMessageStore implements MessageStore {
                                 }
                             }
 
+                            // 现根据messageQueue对消息进行过滤
                             if (messageFilter != null
                                 && !messageFilter.isMatchedByConsumeQueue(isTagsCodeLegal ? tagsCode : null, extRet ? cqExtUnit : null)) {
                                 if (getResult.getBufferTotalSize() == 0) {
@@ -707,6 +708,7 @@ public class DefaultMessageStore implements MessageStore {
                                 continue;
                             }
 
+                            // 根据CommitLog进行过滤
                             if (messageFilter != null
                                 && !messageFilter.isMatchedByCommitLog(selectResult.getByteBuffer().slice(), null)) {
                                 if (getResult.getBufferTotalSize() == 0) {

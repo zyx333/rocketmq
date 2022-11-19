@@ -275,7 +275,7 @@ public class ProcessQueue {
         }
     }
 
-    // 成功处理一批消息
+    // 成功处理一批消息，返回待更新的消费进度
     public long commit() {
         try {
             this.treeMapLock.writeLock().lockInterruptibly();

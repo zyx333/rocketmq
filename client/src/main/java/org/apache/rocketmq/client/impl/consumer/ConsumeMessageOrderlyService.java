@@ -52,6 +52,7 @@ import org.apache.rocketmq.common.protocol.body.ConsumeMessageDirectlyResult;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.remoting.common.RemotingHelper;
 
+// 顺序消息消费实现类
 public class ConsumeMessageOrderlyService implements ConsumeMessageService {
     private static final InternalLogger log = ClientLogger.getLog();
     private final static long MAX_TIME_CONSUME_CONTINUOUSLY =
@@ -97,7 +98,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
     }
 
     public void start() {
-        // 集群消费模式下，每个20s锁定一次分配给自己的消费队列
+        // 集群消费模式下，每隔20s锁定一次分配给自己的消费队列
         if (MessageModel.CLUSTERING.equals(ConsumeMessageOrderlyService.this.defaultMQPushConsumerImpl.messageModel())) {
             this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
@@ -296,6 +297,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
                 case SUSPEND_CURRENT_QUEUE_A_MOMENT:
                     this.getConsumerStatsManager().incConsumeFailedTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), msgs.size());
                     if (checkReconsumeTimes(msgs)) {
+                        // 如果任意一条消息重试次数没有达到最大；或者虽然重试次数达到最大但是进入死信队列失败，则走到此逻辑，重新消费
                         consumeRequest.getProcessQueue().makeMessageToConsumeAgain(msgs);
                         this.submitConsumeRequestLater(
                             consumeRequest.getProcessQueue(),

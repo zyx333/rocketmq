@@ -34,7 +34,7 @@ public class SubscriptionData implements Comparable<SubscriptionData> {
     private Set<String> tagsSet = new HashSet<String>(); // 消息 tag的集合，用于消费端进行消息过滤
     private Set<Integer> codeSet = new HashSet<Integer>(); // 消息tag hash码的集合
     private long subVersion = System.currentTimeMillis();
-    private String expressionType = ExpressionType.TAG; // 消息过滤类型
+    private String expressionType = ExpressionType.TAG; // 消息过滤类型, 有TAG和SQL两种过滤方式
 
     @JSONField(serialize = false)
     private String filterClassSource;

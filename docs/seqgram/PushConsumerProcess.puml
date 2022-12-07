@@ -1,0 +1,10 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+
+DefaultMQPushConsumer -> DefaultMQPushConsumer: 构造函数，会初始化defaultMQPushConsumerImpl \n以及allocateMessageQueueStrategy
+DefaultMQPushConsumer -> DefaultMQPushConsumer: start()启动消费者
+DefaultMQPushConsumer -> DefaultMQPushConsumerImpl: 委托给defaultMQPushConsumerImpl的start()方法
+
+@enduml

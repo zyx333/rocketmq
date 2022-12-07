@@ -265,7 +265,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
         }
 
         if (!this.consumeOrderly) {
-            // 缓存消息间隔大于阈值进行流控
+            // 并发消费时，缓存消息间隔大于阈值进行流控
             if (processQueue.getMaxSpan() > this.defaultMQPushConsumer.getConsumeConcurrentlyMaxSpan()) {
                 this.executePullRequestLater(pullRequest, PULL_TIME_DELAY_MILLS_WHEN_FLOW_CONTROL);
                 if ((queueMaxSpanFlowControlTimes++ % 1000) == 0) {
@@ -278,7 +278,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
             }
         } else {
             // 顺序消息消费需要加锁
-            if (processQueue.isLocked()) {
+            if (processQueue.isLocked()) { // 消费者负载完成后，会设置队列锁定状态
                 if (!pullRequest.isPreviouslyLocked()) { // 表示第一次拉取任务，需要先计算拉取偏移量
                     long offset = -1L;
                     try {

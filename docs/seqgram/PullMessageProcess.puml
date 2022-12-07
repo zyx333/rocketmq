@@ -1,0 +1,15 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+autonumber
+participant PullMessageService
+participant DefaultMQPushConsumerImpl
+participant ProcessQueue
+
+== 拉取消息 ==
+PullMessageService -> PullMessageService: run() 从队列pullRequestQueue中获取请求
+PullMessageService -> DefaultMQPushConsumerImpl: pullMessage()拉取消息
+
+
+
+@enduml

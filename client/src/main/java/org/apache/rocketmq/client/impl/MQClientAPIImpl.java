@@ -1113,6 +1113,7 @@ public class MQClientAPIImpl {
         return response.getCode() == ResponseCode.SUCCESS;
     }
 
+    //消费者消费消息失败后，重新发送消息的请求
     public void consumerSendMessageBack(
         final String addr,
         final MessageExt msg,

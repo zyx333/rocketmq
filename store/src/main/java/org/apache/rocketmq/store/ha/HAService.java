@@ -49,14 +49,14 @@ public class HAService {
 
     private final List<HAConnection> connectionList = new LinkedList<>();
 
-    private final AcceptSocketService acceptSocketService;
+    private final AcceptSocketService acceptSocketService; // 主服务器监听客户端连接
 
     private final DefaultMessageStore defaultMessageStore;
 
     private final WaitNotifyObject waitNotifyObject = new WaitNotifyObject();
     private final AtomicLong push2SlaveMaxOffset = new AtomicLong(0);
 
-    private final GroupTransferService groupTransferService;
+    private final GroupTransferService groupTransferService; //主从同步通知
 
     private final HAClient haClient;
 
@@ -178,9 +178,9 @@ public class HAService {
             this.serverSocketChannel = ServerSocketChannel.open();
             this.selector = RemotingUtil.openSelector();
             this.serverSocketChannel.socket().setReuseAddress(true);
-            this.serverSocketChannel.socket().bind(this.socketAddressListen);
-            this.serverSocketChannel.configureBlocking(false);
-            this.serverSocketChannel.register(this.selector, SelectionKey.OP_ACCEPT);
+            this.serverSocketChannel.socket().bind(this.socketAddressListen); // 绑定监听端口
+            this.serverSocketChannel.configureBlocking(false); // 设置非阻塞模式
+            this.serverSocketChannel.register(this.selector, SelectionKey.OP_ACCEPT);// 注册连接事件
         }
 
         /**
@@ -253,6 +253,8 @@ public class HAService {
 
     /**
      * GroupTransferService Service
+     *
+     * 该类的实现与org.apache.rocketmq.store.CommitLog.GroupCommitService类似
      */
     class GroupTransferService extends ServiceThread {
 
@@ -428,7 +430,7 @@ public class HAService {
                             return false;
                         }
                     } else if (readSize == 0) {
-                        if (++readSizeZeroTimes >= 3) {
+                        if (++readSizeZeroTimes >= 3) { // 连续三次从网络通道中没有读到数据，则结束本次任务
                             break;
                         }
                     } else {
@@ -446,6 +448,7 @@ public class HAService {
 
         private boolean dispatchReadRequest() {
             final int msgHeaderSize = 8 + 4; // phyoffset + size
+            // 从主服务器拉取的数据的结构：phyoffset + size + body
 
             while (true) {
                 int diff = this.byteBufferRead.position() - this.dispatchPosition;
@@ -561,17 +564,21 @@ public class HAService {
 
             while (!this.isStopped()) {
                 try {
+                    // 连接主服务器
                     if (this.connectMaster()) {
 
                         if (this.isTimeToReportOffset()) {
+                            // 向主服务器反馈当前待拉取的消息偏移量
                             boolean result = this.reportSlaveMaxOffset(this.currentReportedOffset);
                             if (!result) {
                                 this.closeMaster();
                             }
                         }
 
+                        // 进行事件选择，每个一秒执行一次
                         this.selector.select(1000);
 
+                        // 处理网络请求，即从主服务器传回的消息数据
                         boolean ok = this.processReadEvent();
                         if (!ok) {
                             this.closeMaster();

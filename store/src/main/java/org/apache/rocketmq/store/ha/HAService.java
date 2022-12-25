@@ -158,6 +158,7 @@ public class HAService {
     }
 
     /**
+     * 主服务器监听客户端连接实现类
      * Listens to slave connections to create {@link HAConnection}.
      */
     class AcceptSocketService extends ServiceThread {
@@ -254,6 +255,7 @@ public class HAService {
     /**
      * GroupTransferService Service
      *
+     * 主从同步通知实现类
      * 该类的实现与org.apache.rocketmq.store.CommitLog.GroupCommitService类似
      */
     class GroupTransferService extends ServiceThread {
@@ -331,6 +333,7 @@ public class HAService {
         }
     }
 
+    // 高可用客户端
     class HAClient extends ServiceThread {
         private static final int READ_MAX_BUFFER_SIZE = 1024 * 1024 * 4;
         // 主服务器地址
@@ -424,6 +427,7 @@ public class HAService {
                     int readSize = this.socketChannel.read(this.byteBufferRead);
                     if (readSize > 0) {
                         readSizeZeroTimes = 0;
+                        // 将读到的消息追加到内存映射文件
                         boolean result = this.dispatchReadRequest();
                         if (!result) {
                             log.error("HAClient, dispatchReadRequest error");

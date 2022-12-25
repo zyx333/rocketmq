@@ -29,7 +29,7 @@ import org.apache.rocketmq.remoting.common.RemotingUtil;
 import org.apache.rocketmq.remoting.netty.NettySystemConfig;
 import org.apache.rocketmq.store.SelectMappedBufferResult;
 
-// HA主服务器高可用连接对象
+// HA主服务器高可用连接对象的封装
 public class HAConnection {
     private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private final HAService haService;
@@ -87,6 +87,7 @@ public class HAConnection {
         return socketChannel;
     }
 
+    // 主节点网络读实现类
     class ReadSocketService extends ServiceThread {
         private static final int READ_MAX_BUFFER_SIZE = 1024 * 1024;
         private final Selector selector;
@@ -163,6 +164,7 @@ public class HAConnection {
                 this.processPosition = 0;
             }
 
+            // 循环读取缓冲区。比较常见的网络读取的写法
             while (this.byteBufferRead.hasRemaining()) {
                 try {
                     int readSize = this.socketChannel.read(this.byteBufferRead);
@@ -207,7 +209,7 @@ public class HAConnection {
         }
     }
 
-    // 处理网络写请求
+    // 主节点网络写实现类，处理网络写请求
     class WriteSocketService extends ServiceThread {
         private final Selector selector;
         private final SocketChannel socketChannel;
@@ -292,6 +294,7 @@ public class HAConnection {
                     }
 
                     // 传输消息到从服务器
+                    // 从指定偏移量查找消息
                     SelectMappedBufferResult selectResult =
                         HAConnection.this.haService.getDefaultMessageStore().getCommitLogData(this.nextTransferFromWhere);
                     if (selectResult != null) {
@@ -313,6 +316,7 @@ public class HAConnection {
                         this.byteBufferHeader.putInt(size);
                         this.byteBufferHeader.flip();
 
+                        // 发送数据到从服务器
                         this.lastWriteOver = this.transferData();
                     } else {
 

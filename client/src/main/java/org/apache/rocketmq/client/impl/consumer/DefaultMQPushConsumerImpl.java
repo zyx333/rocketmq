@@ -424,6 +424,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
             }
         };
 
+        // 判断是否将消费端存储的消费进度提交到broker
         boolean commitOffsetEnable = false;
         long commitOffsetValue = 0L;
         if (MessageModel.CLUSTERING == this.defaultMQPushConsumer.getMessageModel()) {

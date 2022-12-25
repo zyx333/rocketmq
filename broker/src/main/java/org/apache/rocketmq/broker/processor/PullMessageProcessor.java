@@ -484,7 +484,7 @@ public class PullMessageProcessor extends AsyncNettyRequestProcessor implements 
         boolean storeOffsetEnable = brokerAllowSuspend;
         storeOffsetEnable = storeOffsetEnable && hasCommitOffsetFlag;
         storeOffsetEnable = storeOffsetEnable
-            && this.brokerController.getMessageStoreConfig().getBrokerRole() != BrokerRole.SLAVE;
+            && this.brokerController.getMessageStoreConfig().getBrokerRole() != BrokerRole.SLAVE; // 只有主服务器才会从消费端更新消费进度；从服务器通过定时任务从主服务器更新
         if (storeOffsetEnable) {
             // 更新消息消费进度
             // 使用消费端的消费进度，更新broker端保存的消费进度。

@@ -1167,6 +1167,7 @@ public class BrokerController {
                 slaveSyncFuture.cancel(false);
             }
             this.slaveSynchronize.setMasterAddr(null);
+            // 从节点每隔十秒钟同步元数据信息
             slaveSyncFuture = this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() {
                 @Override
                 public void run() {

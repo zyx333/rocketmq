@@ -101,6 +101,7 @@ public class SlaveSynchronize {
         String masterAddrBak = this.masterAddr;
         if (masterAddrBak != null && !masterAddrBak.equals(brokerController.getBrokerAddr())) {
             try {
+                // 向主节点查询消息消费进度
                 String delayOffset =
                     this.brokerController.getBrokerOuterAPI().getAllDelayOffset(masterAddrBak);
                 if (delayOffset != null) {

@@ -255,6 +255,7 @@ public class PullMessageProcessor extends AsyncNettyRequestProcessor implements 
             responseHeader.setMaxOffset(getMessageResult.getMaxOffset());
 
             // 设置下一次拉取消息的brokerId
+            // 建议从从服务器拉取消息，则从配置的从服务器拉取。只能配置一个从服务器，所以也只能有一个从服务器参与消息拉取负载。
             if (getMessageResult.isSuggestPullingFromSlave()) {
                 responseHeader.setSuggestWhichBrokerId(subscriptionGroupConfig.getWhichBrokerWhenConsumeSlowly());
             } else {

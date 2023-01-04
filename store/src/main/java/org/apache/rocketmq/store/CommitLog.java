@@ -639,6 +639,7 @@ public class CommitLog {
         String topic = msg.getTopic();
 //        int queueId msg.getQueueId();
         final int tranType = MessageSysFlag.getTransactionValue(msg.getSysFlag());
+        // 非事务半消息的情况
         if (tranType == MessageSysFlag.TRANSACTION_NOT_TYPE
                 || tranType == MessageSysFlag.TRANSACTION_COMMIT_TYPE) {
             // Delay Delivery

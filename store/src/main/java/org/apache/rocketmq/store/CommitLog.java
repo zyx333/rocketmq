@@ -713,7 +713,7 @@ public class CommitLog {
             switch (result.getStatus()) {
                 case PUT_OK:
                     break;
-                case END_OF_FILE:
+                case END_OF_FILE: //当前文件剩余空间不够写入消息
                     unlockMappedFile = mappedFile;
                     // Create a new file, re-write the message
                     mappedFile = this.mappedFileQueue.getLastMappedFile(0);

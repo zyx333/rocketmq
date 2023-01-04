@@ -60,8 +60,8 @@ import org.apache.rocketmq.remoting.protocol.body.QueueTimeSpan;
 import org.apache.rocketmq.remoting.protocol.body.SubscriptionGroupWrapper;
 import org.apache.rocketmq.remoting.protocol.body.TopicConfigSerializeWrapper;
 import org.apache.rocketmq.remoting.protocol.body.TopicList;
-import org.apache.rocketmq.remoting.protocol.header.namesrv.controller.ElectMasterResponseHeader;
-import org.apache.rocketmq.remoting.protocol.header.namesrv.controller.GetMetaDataResponseHeader;
+import org.apache.rocketmq.remoting.protocol.header.controller.ElectMasterResponseHeader;
+import org.apache.rocketmq.remoting.protocol.header.controller.GetMetaDataResponseHeader;
 import org.apache.rocketmq.remoting.protocol.heartbeat.SubscriptionData;
 import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 import org.apache.rocketmq.remoting.protocol.statictopic.TopicQueueMappingDetail;
@@ -294,6 +294,13 @@ public class DefaultMQAdminExt extends ClientConfig implements MQAdminExt {
         String topic) throws RemotingException, MQClientException,
         InterruptedException, MQBrokerException {
         return defaultMQAdminExtImpl.examineConsumeStats(consumerGroup, topic);
+    }
+
+    @Override
+    public ConsumeStats examineConsumeStats(final String brokerAddr, final String consumerGroup,
+        final String topicName, final long timeoutMillis)
+        throws InterruptedException, RemotingTimeoutException, RemotingSendRequestException, RemotingConnectException, MQBrokerException {
+        return this.defaultMQAdminExtImpl.examineConsumeStats(brokerAddr, consumerGroup, topicName, timeoutMillis);
     }
 
     @Override

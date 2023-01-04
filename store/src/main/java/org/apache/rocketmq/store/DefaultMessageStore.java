@@ -18,6 +18,10 @@ package org.apache.rocketmq.store;
 
 import com.google.common.hash.Hashing;
 import io.openmessaging.storage.dledger.entry.DLedgerEntry;
+import io.opentelemetry.api.common.AttributesBuilder;
+import io.opentelemetry.api.metrics.Meter;
+import io.opentelemetry.sdk.metrics.InstrumentSelector;
+import io.opentelemetry.sdk.metrics.View;
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -47,11 +51,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.common.AbstractBrokerRunnable;
 import org.apache.rocketmq.common.BrokerConfig;
 import org.apache.rocketmq.common.BrokerIdentity;
 import org.apache.rocketmq.common.MixAll;
+import org.apache.rocketmq.common.Pair;
 import org.apache.rocketmq.common.ServiceThread;
 import org.apache.rocketmq.common.SystemClock;
 import org.apache.rocketmq.common.ThreadFactoryImpl;
@@ -71,8 +77,8 @@ import org.apache.rocketmq.common.topic.TopicValidator;
 import org.apache.rocketmq.common.utils.CleanupPolicyUtils;
 import org.apache.rocketmq.common.utils.QueueTypeUtils;
 import org.apache.rocketmq.common.utils.ServiceProvider;
-import org.apache.rocketmq.logging.InternalLogger;
-import org.apache.rocketmq.logging.InternalLoggerFactory;
+import org.apache.rocketmq.logging.org.slf4j.Logger;
+import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.protocol.body.HARuntimeInfo;
 import org.apache.rocketmq.store.config.BrokerRole;
 import org.apache.rocketmq.store.config.FlushDiskType;
@@ -90,6 +96,7 @@ import org.apache.rocketmq.store.kv.CommitLogDispatcherCompaction;
 import org.apache.rocketmq.store.kv.CompactionService;
 import org.apache.rocketmq.store.kv.CompactionStore;
 import org.apache.rocketmq.store.logfile.MappedFile;
+import org.apache.rocketmq.store.metrics.DefaultStoreMetricsManager;
 import org.apache.rocketmq.store.queue.ConsumeQueueInterface;
 import org.apache.rocketmq.store.queue.ConsumeQueueStore;
 import org.apache.rocketmq.store.queue.CqUnit;
@@ -99,7 +106,7 @@ import org.apache.rocketmq.store.timer.TimerMessageStore;
 import org.apache.rocketmq.store.util.PerfCounter;
 
 public class DefaultMessageStore implements MessageStore {
-    private static final InternalLogger LOGGER = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
     public final PerfCounter.Ticks perfs = new PerfCounter.Ticks(LOGGER);
 
@@ -216,7 +223,7 @@ public class DefaultMessageStore implements MessageStore {
 
         this.reputMessageService = new ReputMessageService();
 
-        this.transientStorePool = new TransientStorePool(messageStoreConfig);
+        this.transientStorePool = new TransientStorePool(this);
 
         this.scheduledExecutorService =
             Executors.newSingleThreadScheduledExecutor(new ThreadFactoryImpl("StoreScheduledThread", getBrokerIdentity()));
@@ -331,7 +338,7 @@ public class DefaultMessageStore implements MessageStore {
             this.haService.init(this);
         }
 
-        if (messageStoreConfig.isTransientStorePoolEnable()) {
+        if (this.isTransientStorePoolEnable()) {
             this.transientStorePool.init();
         }
 
@@ -697,9 +704,14 @@ public class DefaultMessageStore implements MessageStore {
 
     @Override
     public GetMessageResult getMessage(final String group, final String topic, final int queueId, final long offset,
-        final int maxMsgNums,
-        final MessageFilter messageFilter) {
+        final int maxMsgNums, final MessageFilter messageFilter) {
         return getMessage(group, topic, queueId, offset, maxMsgNums, MAX_PULL_MSG_SIZE, messageFilter);
+    }
+
+    @Override
+    public CompletableFuture<GetMessageResult> getMessageAsync(String group, String topic,
+        int queueId, long offset, int maxMsgNums, MessageFilter messageFilter) {
+        return CompletableFuture.completedFuture(getMessage(group, topic, queueId, offset, maxMsgNums, messageFilter));
     }
 
     @Override
@@ -884,6 +896,12 @@ public class DefaultMessageStore implements MessageStore {
     }
 
     @Override
+    public CompletableFuture<GetMessageResult> getMessageAsync(String group, String topic,
+        int queueId, long offset, int maxMsgNums, int maxTotalMsgSize, MessageFilter messageFilter) {
+        return CompletableFuture.completedFuture(getMessage(group, topic, queueId, offset, maxMsgNums, maxTotalMsgSize, messageFilter));
+    }
+
+    @Override
     public long getMaxOffsetInQueue(String topic, int queueId) {
         return getMaxOffsetInQueue(topic, queueId, true);
     }
@@ -1049,6 +1067,7 @@ public class DefaultMessageStore implements MessageStore {
         return this.commitLog.getMaxOffset();
     }
 
+
     @Override
     public long getMinPhyOffset() {
         return this.commitLog.getMinOffset();
@@ -1074,6 +1093,11 @@ public class DefaultMessageStore implements MessageStore {
         return -1;
     }
 
+    @Override
+    public CompletableFuture<Long> getEarliestMessageTimeAsync(String topic, int queueId) {
+        return CompletableFuture.completedFuture(getEarliestMessageTime(topic, queueId));
+    }
+
     protected long getStoreTime(CqUnit result) {
         if (result != null) {
             try {
@@ -1093,7 +1117,7 @@ public class DefaultMessageStore implements MessageStore {
         if (this.getCommitLog() instanceof DLedgerCommitLog) {
             minPhyOffset += DLedgerEntry.BODY_OFFSET;
         }
-        final int size = this.messageStoreConfig.getMaxMessageSize() * 2;
+        final int size = MessageDecoder.MESSAGE_STORE_TIMESTAMP_POSITION + 8;
         return this.getCommitLog().pickupStoreTimestamp(minPhyOffset, size);
     }
 
@@ -1105,6 +1129,11 @@ public class DefaultMessageStore implements MessageStore {
         }
 
         return -1;
+    }
+
+    @Override public CompletableFuture<Long> getMessageStoreTimeStampAsync(String topic, int queueId,
+        long consumeQueueOffset) {
+        return CompletableFuture.completedFuture(getMessageStoreTimeStamp(topic, queueId, consumeQueueOffset));
     }
 
     @Override
@@ -1209,6 +1238,11 @@ public class DefaultMessageStore implements MessageStore {
         }
 
         return queryMessageResult;
+    }
+
+    @Override public CompletableFuture<QueryMessageResult> queryMessageAsync(String topic, String key,
+        int maxNum, long begin, long end) {
+        return CompletableFuture.completedFuture(queryMessage(topic, key, maxNum, begin, end));
     }
 
     @Override
@@ -1369,6 +1403,10 @@ public class DefaultMessageStore implements MessageStore {
     @Override
     public long dispatchBehindBytes() {
         return this.reputMessageService.behind();
+    }
+
+    public long flushBehindBytes() {
+        return this.commitLog.remainHowManyDataToCommit() + this.commitLog.remainHowManyDataToFlush();
     }
 
     @Override
@@ -1589,21 +1627,21 @@ public class DefaultMessageStore implements MessageStore {
 
         this.scheduledExecutorService.scheduleAtFixedRate(new AbstractBrokerRunnable(this.getBrokerIdentity()) {
             @Override
-            public void run2() {
+            public void run0() {
                 DefaultMessageStore.this.cleanFilesPeriodically();
             }
         }, 1000 * 60, this.messageStoreConfig.getCleanResourceInterval(), TimeUnit.MILLISECONDS);
 
         this.scheduledExecutorService.scheduleAtFixedRate(new AbstractBrokerRunnable(this.getBrokerIdentity()) {
             @Override
-            public void run2() {
+            public void run0() {
                 DefaultMessageStore.this.checkSelf();
             }
         }, 1, 10, TimeUnit.MINUTES);
 
         this.scheduledExecutorService.scheduleAtFixedRate(new AbstractBrokerRunnable(this.getBrokerIdentity()) {
             @Override
-            public void run2() {
+            public void run0() {
                 if (DefaultMessageStore.this.getMessageStoreConfig().isDebugLockEnable()) {
                     try {
                         if (DefaultMessageStore.this.commitLog.getBeginTimeInLock() != 0) {
@@ -1624,7 +1662,7 @@ public class DefaultMessageStore implements MessageStore {
 
         this.scheduledExecutorService.scheduleAtFixedRate(new AbstractBrokerRunnable(this.getBrokerIdentity()) {
             @Override
-            public void run2() {
+            public void run0() {
                 DefaultMessageStore.this.storeCheckpoint.flush();
             }
         }, 1, 1, TimeUnit.SECONDS);
@@ -1802,6 +1840,11 @@ public class DefaultMessageStore implements MessageStore {
     @Override
     public LinkedList<CommitLogDispatcher> getDispatcherList() {
         return this.dispatcherList;
+    }
+
+    @Override
+    public void addDispatcher(CommitLogDispatcher dispatcher) {
+        this.dispatcherList.add(dispatcher);
     }
 
     @Override
@@ -2052,7 +2095,7 @@ public class DefaultMessageStore implements MessageStore {
         }
 
         public String getServiceName() {
-            return DefaultMessageStore.this.brokerConfig.getLoggerIdentifier() + CleanCommitLogService.class.getSimpleName();
+            return DefaultMessageStore.this.brokerConfig.getIdentifier() + CleanCommitLogService.class.getSimpleName();
         }
 
         private boolean isTimeToDelete() {
@@ -2249,7 +2292,7 @@ public class DefaultMessageStore implements MessageStore {
         }
 
         public String getServiceName() {
-            return DefaultMessageStore.this.brokerConfig.getLoggerIdentifier() + CleanConsumeQueueService.class.getSimpleName();
+            return DefaultMessageStore.this.brokerConfig.getIdentifier() + CleanConsumeQueueService.class.getSimpleName();
         }
     }
 
@@ -2367,7 +2410,7 @@ public class DefaultMessageStore implements MessageStore {
 
         public String getServiceName() {
             if (brokerConfig.isInBrokerContainer()) {
-                return brokerConfig.getLoggerIdentifier() + CorrectLogicOffsetService.class.getSimpleName();
+                return brokerConfig.getIdentifier() + CorrectLogicOffsetService.class.getSimpleName();
             }
             return CorrectLogicOffsetService.class.getSimpleName();
         }
@@ -2439,7 +2482,7 @@ public class DefaultMessageStore implements MessageStore {
         @Override
         public String getServiceName() {
             if (DefaultMessageStore.this.brokerConfig.isInBrokerContainer()) {
-                return DefaultMessageStore.this.getBrokerIdentity().getLoggerIdentifier() + FlushConsumeQueueService.class.getSimpleName();
+                return DefaultMessageStore.this.getBrokerIdentity().getIdentifier() + FlushConsumeQueueService.class.getSimpleName();
             }
             return FlushConsumeQueueService.class.getSimpleName();
         }
@@ -2615,7 +2658,7 @@ public class DefaultMessageStore implements MessageStore {
         @Override
         public String getServiceName() {
             if (DefaultMessageStore.this.getBrokerConfig().isInBrokerContainer()) {
-                return DefaultMessageStore.this.getBrokerIdentity().getLoggerIdentifier() + ReputMessageService.class.getSimpleName();
+                return DefaultMessageStore.this.getBrokerIdentity().getIdentifier() + ReputMessageService.class.getSimpleName();
             }
             return ReputMessageService.class.getSimpleName();
         }
@@ -2661,5 +2704,57 @@ public class DefaultMessageStore implements MessageStore {
     @Override
     public boolean isShutdown() {
         return shutdown;
+    }
+
+    @Override
+    public long estimateMessageCount(String topic, int queueId, long from, long to, MessageFilter filter) {
+        if (from < 0) {
+            from = 0;
+        }
+
+        if (from >= to) {
+            return 0;
+        }
+
+        if (null == filter) {
+            return to - from;
+        }
+
+        ConsumeQueueInterface consumeQueue = findConsumeQueue(topic, queueId);
+        if (null == consumeQueue) {
+            return 0;
+        }
+
+        // correct the "from" argument to min offset in queue if it is too small
+        long minOffset = consumeQueue.getMinOffsetInQueue();
+        if (from < minOffset) {
+            long diff = to - from;
+            from = minOffset;
+            to = from + diff;
+        }
+
+        long msgCount = consumeQueue.estimateMessageCount(from, to, filter);
+        return msgCount == -1 ? to - from : msgCount;
+    }
+
+    @Override
+    public List<Pair<InstrumentSelector, View>> getMetricsView() {
+        return DefaultStoreMetricsManager.getMetricsView();
+    }
+
+    @Override
+    public void initMetrics(Meter meter, Supplier<AttributesBuilder> attributesBuilderSupplier) {
+        DefaultStoreMetricsManager.init(meter, attributesBuilderSupplier, this);
+    }
+
+    /**
+     * Enable transient commitLog store pool only if transientStorePoolEnable is true and broker role is not SLAVE or
+     * enableControllerMode is true
+     *
+     * @return <tt>true</tt> or <tt>false</tt>
+     */
+    public boolean isTransientStorePoolEnable() {
+        return this.messageStoreConfig.isTransientStorePoolEnable() &&
+            (this.brokerConfig.isEnableControllerMode() || this.messageStoreConfig.getBrokerRole() != BrokerRole.SLAVE);
     }
 }

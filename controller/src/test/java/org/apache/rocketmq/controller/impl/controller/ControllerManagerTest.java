@@ -37,10 +37,10 @@ import org.apache.rocketmq.remoting.netty.NettyServerConfig;
 import org.apache.rocketmq.remoting.protocol.RemotingCommand;
 import org.apache.rocketmq.remoting.protocol.RequestCode;
 import org.apache.rocketmq.remoting.protocol.header.namesrv.BrokerHeartbeatRequestHeader;
-import org.apache.rocketmq.remoting.protocol.header.namesrv.controller.GetReplicaInfoRequestHeader;
-import org.apache.rocketmq.remoting.protocol.header.namesrv.controller.GetReplicaInfoResponseHeader;
-import org.apache.rocketmq.remoting.protocol.header.namesrv.controller.RegisterBrokerToControllerRequestHeader;
-import org.apache.rocketmq.remoting.protocol.header.namesrv.controller.RegisterBrokerToControllerResponseHeader;
+import org.apache.rocketmq.remoting.protocol.header.controller.GetReplicaInfoRequestHeader;
+import org.apache.rocketmq.remoting.protocol.header.controller.GetReplicaInfoResponseHeader;
+import org.apache.rocketmq.remoting.protocol.header.controller.RegisterBrokerToControllerRequestHeader;
+import org.apache.rocketmq.remoting.protocol.header.controller.RegisterBrokerToControllerResponseHeader;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -128,9 +128,7 @@ public class ControllerManagerTest {
         final String brokerName, final String address, final RemotingClient client,
         final long heartbeatTimeoutMillis) throws Exception {
 
-        final RegisterBrokerToControllerRequestHeader requestHeader = new RegisterBrokerToControllerRequestHeader(clusterName, brokerName, address);
-        // Timeout = 3000
-        requestHeader.setHeartbeatTimeoutMillis(heartbeatTimeoutMillis);
+        final RegisterBrokerToControllerRequestHeader requestHeader = new RegisterBrokerToControllerRequestHeader(clusterName, brokerName, address, heartbeatTimeoutMillis, 1, 1000L, 0);
         final RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.CONTROLLER_REGISTER_BROKER, requestHeader);
         final RemotingCommand response = client.invokeSync(controllerAddress, request, 3000);
         assert response != null;
@@ -173,8 +171,8 @@ public class ControllerManagerTest {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, 0, 2000L, TimeUnit.MILLISECONDS);
-        Boolean flag = await().atMost(Duration.ofSeconds(5)).until(() -> {
+        }, 0, 1000L, TimeUnit.MILLISECONDS);
+        Boolean flag = await().atMost(Duration.ofSeconds(10)).until(() -> {
             final GetReplicaInfoRequestHeader requestHeader = new GetReplicaInfoRequestHeader("broker1");
             final RemotingCommand request = RemotingCommand.createRequestCommand(RequestCode.CONTROLLER_GET_REPLICA_INFO, requestHeader);
             final RemotingCommand response = this.remotingClient1.invokeSync(leaderAddr, request, 3000);

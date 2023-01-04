@@ -18,13 +18,13 @@
 package org.apache.rocketmq.client.latency;
 
 import org.apache.rocketmq.client.impl.producer.TopicPublishInfo;
-import org.apache.rocketmq.client.log.ClientLogger;
-import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.common.message.MessageQueue;
+import org.apache.rocketmq.logging.org.slf4j.Logger;
+import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
 // 消息失败策略，延迟实现的门面类
 public class MQFaultStrategy {
-    private final static InternalLogger log = ClientLogger.getLog();
+    private final static Logger log = LoggerFactory.getLogger(MQFaultStrategy.class);
     private final LatencyFaultTolerance<String> latencyFaultTolerance = new LatencyFaultToleranceImpl();
 
     // 控制对发送超时的broker进行一段时间的退避。
@@ -68,9 +68,7 @@ public class MQFaultStrategy {
                 // 遍历队列，如果对应的broker可用，则直接返回对应的队列
                 for (int i = 0; i < tpInfo.getMessageQueueList().size(); i++) {
                     // 取模获取可用的MessageQueue
-                    int pos = Math.abs(index++) % tpInfo.getMessageQueueList().size();
-                    if (pos < 0)
-                        pos = 0;
+                    int pos = index++ % tpInfo.getMessageQueueList().size();
                     MessageQueue mq = tpInfo.getMessageQueueList().get(pos);
                     // 判断broker是否可用
                     if (latencyFaultTolerance.isAvailable(mq.getBrokerName()))

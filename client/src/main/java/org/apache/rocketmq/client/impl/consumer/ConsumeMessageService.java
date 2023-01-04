@@ -19,7 +19,7 @@ package org.apache.rocketmq.client.impl.consumer;
 import java.util.List;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.message.MessageQueue;
-import org.apache.rocketmq.common.protocol.body.ConsumeMessageDirectlyResult;
+import org.apache.rocketmq.remoting.protocol.body.ConsumeMessageDirectlyResult;
 
 public interface ConsumeMessageService {
     void start();
@@ -42,5 +42,10 @@ public interface ConsumeMessageService {
         final List<MessageExt> msgs,
         final ProcessQueue processQueue,
         final MessageQueue messageQueue,
-        final boolean dispathToConsume); // 是否转发到消费线程池，并发消费时忽略该参数
+        final boolean dispathToConsume);// 是否转发到消费线程池，并发消费时忽略该参数
+
+    void submitPopConsumeRequest(
+        final List<MessageExt> msgs,
+        final PopProcessQueue processQueue,
+        final MessageQueue messageQueue);
 }

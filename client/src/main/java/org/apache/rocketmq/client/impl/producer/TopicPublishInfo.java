@@ -20,15 +20,15 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.rocketmq.client.common.ThreadLocalIndex;
 import org.apache.rocketmq.common.message.MessageQueue;
-import org.apache.rocketmq.common.protocol.route.QueueData;
-import org.apache.rocketmq.common.protocol.route.TopicRouteData;
+import org.apache.rocketmq.remoting.protocol.route.QueueData;
+import org.apache.rocketmq.remoting.protocol.route.TopicRouteData;
 
 public class TopicPublishInfo {
     // 是否是顺序消息
     private boolean orderTopic = false;
     private boolean haveTopicRouterInfo = false;
     // 该topic的消息队列
-    private List<MessageQueue> messageQueueList = new ArrayList<MessageQueue>();
+    private List<MessageQueue> messageQueueList = new ArrayList<>();
     // 用于选择消息队列。每选择一次，会自增1
     private volatile ThreadLocalIndex sendWhichQueue = new ThreadLocalIndex();
     private TopicRouteData topicRouteData;
@@ -76,9 +76,7 @@ public class TopicPublishInfo {
         } else {
             for (int i = 0; i < this.messageQueueList.size(); i++) {
                 int index = this.sendWhichQueue.incrementAndGet();
-                int pos = Math.abs(index) % this.messageQueueList.size();
-                if (pos < 0)
-                    pos = 0;
+                int pos = index % this.messageQueueList.size();
                 MessageQueue mq = this.messageQueueList.get(pos);
                 // 选择与上一次发送消息不同的broker，避免再次失败
                 if (!mq.getBrokerName().equals(lastBrokerName)) {
@@ -92,9 +90,8 @@ public class TopicPublishInfo {
     public MessageQueue selectOneMessageQueue() {
         // 递增取模选择要发送的MessageQueue
         int index = this.sendWhichQueue.incrementAndGet();
-        int pos = Math.abs(index) % this.messageQueueList.size();
-        if (pos < 0)
-            pos = 0;
+        int pos = index % this.messageQueueList.size();
+
         return this.messageQueueList.get(pos);
     }
 

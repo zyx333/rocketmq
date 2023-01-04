@@ -22,9 +22,8 @@ import java.nio.ByteBuffer;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.rocketmq.common.constant.LoggerName;
-import org.apache.rocketmq.logging.InternalLogger;
-import org.apache.rocketmq.logging.InternalLoggerFactory;
-import org.apache.rocketmq.store.config.MessageStoreConfig;
+import org.apache.rocketmq.logging.org.slf4j.Logger;
+import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.store.util.LibC;
 import sun.nio.ch.DirectBuffer;
 
@@ -33,19 +32,20 @@ import sun.nio.ch.DirectBuffer;
 // 通过TransientStorePool，rocketmq还实现了内存级别的读写分离机制。消息先写入堆外内存，异步刷新到pagecache；而消息消费时不会从对外内存读取数据；
 // 而是从pagecache读取，这样就实现了读写分离。但是缺点是如果broker进程异常退出，会丢失堆外内存的数据。
 public class TransientStorePool {
-    private static final InternalLogger log = InternalLoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
+    private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
     // availableBuffer的个数
     private final int poolSize;
     // 每个ByteBuffer的大小
     private final int fileSize;
     private final Deque<ByteBuffer> availableBuffers;
-    private final MessageStoreConfig storeConfig;
+    private final DefaultMessageStore messageStore;
+    private volatile boolean isRealCommit;
 
-    public TransientStorePool(final MessageStoreConfig storeConfig) {
-        this.storeConfig = storeConfig;
-        this.poolSize = storeConfig.getTransientStorePoolSize();
-        this.fileSize = storeConfig.getMappedFileSizeCommitLog();
+    public TransientStorePool(final DefaultMessageStore messageStore) {
+        this.messageStore = messageStore;
+        this.poolSize = messageStore.getMessageStoreConfig().getTransientStorePoolSize();
+        this.fileSize = messageStore.getMessageStoreConfig().getMappedFileSizeCommitLog();
         this.availableBuffers = new ConcurrentLinkedDeque<>();
     }
 
@@ -89,9 +89,17 @@ public class TransientStorePool {
     }
 
     public int availableBufferNums() {
-        if (storeConfig.isTransientStorePoolEnable()) {
+        if (messageStore.isTransientStorePoolEnable()) {
             return availableBuffers.size();
         }
         return Integer.MAX_VALUE;
+    }
+
+    public boolean isRealCommit() {
+        return isRealCommit;
+    }
+
+    public void setRealCommit(boolean realCommit) {
+        isRealCommit = realCommit;
     }
 }

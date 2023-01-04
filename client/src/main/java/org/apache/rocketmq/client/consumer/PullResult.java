@@ -26,6 +26,7 @@ public class PullResult {
     private final long maxOffset; // 消息队列最大偏移量
     private List<MessageExt> msgFoundList; // 具体拉取的消息列表
 
+
     public PullResult(PullStatus pullStatus, long nextBeginOffset, long minOffset, long maxOffset,
         List<MessageExt> msgFoundList) {
         super();

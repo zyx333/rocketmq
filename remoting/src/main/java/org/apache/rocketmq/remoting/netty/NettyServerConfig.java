@@ -17,8 +17,13 @@
 package org.apache.rocketmq.remoting.netty;
 
 public class NettyServerConfig implements Cloneable {
-    // listenport监听端口
-    private int listenPort = 8888;
+
+    /**
+     * Bind address may be hostname, IPv4 or IPv6.
+     * By default, it's wildcard address, listening all network interfaces.
+     */
+    private String bindAddress = "0.0.0.0";
+    private int listenPort = 0;
     // netty业务线程池线程个数
     private int serverWorkerThreads = 8;
     // netty public任务线程池线程个数。不同业务业务类型会有不同的线程池，如果该业务类型未注册线程池，就会使用public线程池
@@ -44,13 +49,21 @@ public class NettyServerConfig implements Cloneable {
 
     /**
      * 是否开启epoll
-     * make make install
+     * make install
      *
      *
      * ../glibc-2.10.1/configure \ --prefix=/usr \ --with-headers=/usr/include \
      * --host=x86_64-linux-gnu \ --build=x86_64-pc-linux-gnu \ --without-gd
      */
     private boolean useEpollNativeSelector = false;
+
+    public String getBindAddress() {
+        return bindAddress;
+    }
+
+    public void setBindAddress(String bindAddress) {
+        this.bindAddress = bindAddress;
+    }
 
     public int getListenPort() {
         return listenPort;

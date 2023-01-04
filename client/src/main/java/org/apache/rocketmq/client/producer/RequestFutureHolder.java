@@ -31,16 +31,16 @@ import java.util.concurrent.TimeUnit;
 import org.apache.rocketmq.client.common.ClientErrorCode;
 import org.apache.rocketmq.client.exception.RequestTimeoutException;
 import org.apache.rocketmq.client.impl.producer.DefaultMQProducerImpl;
-import org.apache.rocketmq.client.log.ClientLogger;
 import org.apache.rocketmq.common.ThreadFactoryImpl;
-import org.apache.rocketmq.logging.InternalLogger;
+import org.apache.rocketmq.logging.org.slf4j.Logger;
+import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
 public class RequestFutureHolder {
-    private static InternalLogger log = ClientLogger.getLog();
+    private static final Logger log = LoggerFactory.getLogger(RequestFutureHolder.class);
     private static final RequestFutureHolder INSTANCE = new RequestFutureHolder();
     // 保存请求future的映射
-    private ConcurrentHashMap<String, RequestResponseFuture> requestFutureTable = new ConcurrentHashMap<String, RequestResponseFuture>();
-    private final Set<DefaultMQProducerImpl> producerSet = new HashSet<DefaultMQProducerImpl>();
+    private ConcurrentHashMap<String, RequestResponseFuture> requestFutureTable = new ConcurrentHashMap<>();
+    private final Set<DefaultMQProducerImpl> producerSet = new HashSet<>();
     private ScheduledExecutorService scheduledExecutorService = null;
 
     public ConcurrentHashMap<String, RequestResponseFuture> getRequestFutureTable() {
@@ -48,7 +48,7 @@ public class RequestFutureHolder {
     }
 
     private void scanExpiredRequest() {
-        final List<RequestResponseFuture> rfList = new LinkedList<RequestResponseFuture>();
+        final List<RequestResponseFuture> rfList = new LinkedList<>();
         Iterator<Map.Entry<String, RequestResponseFuture>> it = requestFutureTable.entrySet().iterator();
         while (it.hasNext()) {
             Map.Entry<String, RequestResponseFuture> next = it.next();

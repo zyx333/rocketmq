@@ -25,9 +25,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.rocketmq.client.common.ThreadLocalIndex;
 
 public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> {
-    private final ConcurrentHashMap<String, FaultItem> faultItemTable = new ConcurrentHashMap<String, FaultItem>(16);
+    private final ConcurrentHashMap<String, FaultItem> faultItemTable = new ConcurrentHashMap<>(16);
 
-    private final ThreadLocalIndex whichItemWorst = new ThreadLocalIndex();
+    private final ThreadLocalIndex randomItem = new ThreadLocalIndex();
 
     // 更新失败条目
     @Override
@@ -72,28 +72,21 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
     @Override
     public String pickOneAtLeast() {
         final Enumeration<FaultItem> elements = this.faultItemTable.elements();
-        List<FaultItem> tmpList = new LinkedList<FaultItem>();
+        List<FaultItem> tmpList = new LinkedList<>();
         while (elements.hasMoreElements()) {
             final FaultItem faultItem = elements.nextElement();
             tmpList.add(faultItem);
         }
-
         if (!tmpList.isEmpty()) {
-            // 随机打乱顺序
-            Collections.shuffle(tmpList);
-
-            // 对规避的broker排序：可用的broker在前面； 发送延迟较短的在前面；规避时间到期较早的在前面
             Collections.sort(tmpList);
-
             final int half = tmpList.size() / 2;
             if (half <= 0) {
                 return tmpList.get(0).getName();
             } else {
-                final int i = this.whichItemWorst.incrementAndGet() % half;
+                final int i = this.randomItem.incrementAndGet() % half;
                 return tmpList.get(i).getName();
             }
         }
-
         return null;
     }
 
@@ -101,7 +94,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
     public String toString() {
         return "LatencyFaultToleranceImpl{" +
             "faultItemTable=" + faultItemTable +
-            ", whichItemWorst=" + whichItemWorst +
+            ", whichItemWorst=" + randomItem +
             '}';
     }
 

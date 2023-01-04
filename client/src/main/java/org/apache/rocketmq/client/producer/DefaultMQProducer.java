@@ -19,6 +19,7 @@ package org.apache.rocketmq.client.producer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
@@ -29,7 +30,6 @@ import org.apache.rocketmq.client.exception.MQBrokerException;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.exception.RequestTimeoutException;
 import org.apache.rocketmq.client.impl.producer.DefaultMQProducerImpl;
-import org.apache.rocketmq.client.log.ClientLogger;
 import org.apache.rocketmq.client.trace.AsyncTraceDispatcher;
 import org.apache.rocketmq.client.trace.TraceDispatcher;
 import org.apache.rocketmq.client.trace.hook.EndTransactionTraceHookImpl;
@@ -38,15 +38,14 @@ import org.apache.rocketmq.common.MixAll;
 import org.apache.rocketmq.common.message.Message;
 import org.apache.rocketmq.common.message.MessageBatch;
 import org.apache.rocketmq.common.message.MessageClientIDSetter;
-import org.apache.rocketmq.common.message.MessageDecoder;
 import org.apache.rocketmq.common.message.MessageExt;
-import org.apache.rocketmq.common.message.MessageId;
 import org.apache.rocketmq.common.message.MessageQueue;
-import org.apache.rocketmq.common.protocol.ResponseCode;
 import org.apache.rocketmq.common.topic.TopicValidator;
-import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.remoting.RPCHook;
 import org.apache.rocketmq.remoting.exception.RemotingException;
+import org.apache.rocketmq.remoting.protocol.ResponseCode;
+import org.apache.rocketmq.logging.org.slf4j.Logger;
+import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
 /**
  * This class is the entry point for applications intending to send messages. </p>
@@ -54,7 +53,7 @@ import org.apache.rocketmq.remoting.exception.RemotingException;
  * It's fine to tune fields which exposes getter/setter methods, but keep in mind, all of them should work well out of
  * box for most scenarios. </p>
  *
- * This class aggregates various <code>send</code> methods to deliver messages to brokers. Each of them has pros and
+ * This class aggregates various <code>send</code> methods to deliver messages to broker(s). Each of them has pros and
  * cons; you'd better understand strengths and weakness of them before actually coding. </p>
  *
  * <p> <strong>Thread Safety:</strong> After configuring and starting process, this class can be regarded as thread-safe
@@ -68,14 +67,14 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * Wrapping internal implementations for virtually all methods presented in this class.
      */
     protected final transient DefaultMQProducerImpl defaultMQProducerImpl;
-    private final InternalLogger log = ClientLogger.getLog();
-    private final Set<Integer> retryResponseCodes = new CopyOnWriteArraySet<Integer>(Arrays.asList(
-            ResponseCode.TOPIC_NOT_EXIST,
-            ResponseCode.SERVICE_NOT_AVAILABLE,
-            ResponseCode.SYSTEM_ERROR,
-            ResponseCode.NO_PERMISSION,
-            ResponseCode.NO_BUYER_ID,
-            ResponseCode.NOT_IN_CURRENT_UNIT
+    private final Logger logger = LoggerFactory.getLogger(DefaultMQProducer.class);
+    private final Set<Integer> retryResponseCodes = new CopyOnWriteArraySet<>(Arrays.asList(
+        ResponseCode.TOPIC_NOT_EXIST,
+        ResponseCode.SERVICE_NOT_AVAILABLE,
+        ResponseCode.SYSTEM_ERROR,
+        ResponseCode.NO_PERMISSION,
+        ResponseCode.NO_BUYER_ID,
+        ResponseCode.NOT_IN_CURRENT_UNIT
     ));
 
     /**
@@ -84,7 +83,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      *
      * For non-transactional messages, it does not matter as long as it's unique per process. </p>
      *
-     * See {@linktourl http://rocketmq.apache.org/docs/core-concept/} for more discussion.
+     * See <a href="https://rocketmq.apache.org/docs/introduction/02concepts">core concepts</a> for more discussion.
      */
     // 生产者组。主要用于事务消息，会查事务状态时随机选择该组中任意一个生产者发起回查请求
     private String producerGroup;
@@ -134,7 +133,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     private boolean retryAnotherBrokerWhenNotStoreOK = false;
 
     /**
-     * Maximum allowed message size in bytes.
+     * Maximum allowed message body size in bytes.
      * 允许的最大消息长度
      */
     private int maxMessageSize = 1024 * 1024 * 4; // 4M
@@ -143,6 +142,23 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * Interface of asynchronous transfer data
      */
     private TraceDispatcher traceDispatcher = null;
+
+    /**
+     * Indicate whether to block message when asynchronous sending traffic is too heavy.
+     */
+    private boolean enableBackpressureForAsyncMode = false;
+
+    /**
+     * on BackpressureForAsyncMode, limit maximum number of on-going sending async messages
+     * default is 10000
+     */
+    private int backPressureForAsyncSendNum = 10000;
+
+    /**
+     * on BackpressureForAsyncMode, limit maximum message size of on-going sending async messages
+     * default is 100M
+     */
+    private int backPressureForAsyncSendSize = 100 * 1024 * 1024;
 
     /**
      * Default constructor.
@@ -265,7 +281,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
                 this.defaultMQProducerImpl.registerEndTransactionHook(
                     new EndTransactionTraceHookImpl(traceDispatcher));
             } catch (Throwable e) {
-                log.error("system mqtrace hook init failed ,maybe can't send msg trace data");
+                logger.error("system mqtrace hook init failed ,maybe can't send msg trace data");
             }
         }
     }
@@ -273,11 +289,11 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     @Override
     public void setUseTLS(boolean useTLS) {
         super.setUseTLS(useTLS);
-        if (traceDispatcher != null && traceDispatcher instanceof AsyncTraceDispatcher) {
+        if (traceDispatcher instanceof AsyncTraceDispatcher) {
             ((AsyncTraceDispatcher) traceDispatcher).getTraceProducer().setUseTLS(useTLS);
         }
     }
-    
+
     /**
      * Start this producer instance. </p>
      *
@@ -295,7 +311,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
             try {
                 traceDispatcher.start(this.getNamesrvAddr(), this.getAccessChannel());
             } catch (MQClientException e) {
-                log.warn("trace dispatcher start failed ", e);
+                logger.warn("trace dispatcher start failed ", e);
             }
         }
     }
@@ -329,7 +345,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * 发送消息。默认为同步发送
      *
      * <strong>Warn:</strong> this method has internal retry-mechanism, that is, internal implementation will retry
-     * {@link #retryTimesWhenSendFailed} times before claiming failure. As a result, multiple messages may potentially
+     * {@link #retryTimesWhenSendFailed} times before claiming failure. As a result, multiple messages may be potentially
      * delivered to broker(s). It's up to the application developers to resolve potential duplication issue.
      *
      * @param msg Message to send.
@@ -600,7 +616,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * Send request message in synchronous mode. This method returns only when the consumer consume the request message and reply a message. </p>
      *
      * <strong>Warn:</strong> this method has internal retry-mechanism, that is, internal implementation will retry
-     * {@link #retryTimesWhenSendFailed} times before claiming failure. As a result, multiple messages may potentially
+     * {@link #retryTimesWhenSendFailed} times before claiming failure. As a result, multiple messages may be potentially
      * delivered to broker(s). It's up to the application developers to resolve potential duplication issue.
      *
      * @param msg request message to send
@@ -776,12 +792,13 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * @param key accesskey
      * @param newTopic topic name
      * @param queueNum topic's queue number
+     * @param attributes
      * @throws MQClientException if there is any client error.
      */
     @Deprecated
     @Override
-    public void createTopic(String key, String newTopic, int queueNum) throws MQClientException {
-        createTopic(key, withNamespace(newTopic), queueNum, 0);
+    public void createTopic(String key, String newTopic, int queueNum, Map<String, String> attributes) throws MQClientException {
+        createTopic(key, withNamespace(newTopic), queueNum, 0, null);
     }
 
     /**
@@ -792,11 +809,12 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * @param newTopic topic name。 主题名称
      * @param queueNum topic's queue number。 队列数量
      * @param topicSysFlag topic system flag
+     * @param attributes
      * @throws MQClientException if there is any client error.
      */
     @Deprecated
     @Override
-    public void createTopic(String key, String newTopic, int queueNum, int topicSysFlag) throws MQClientException {
+    public void createTopic(String key, String newTopic, int queueNum, int topicSysFlag, Map<String, String> attributes) throws MQClientException {
         this.defaultMQProducerImpl.createTopic(key, withNamespace(newTopic), queueNum, topicSysFlag);
     }
 
@@ -847,7 +865,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     }
 
     /**
-     * Query earliest message store time.
+     * Query the earliest message store time.
      *
      * This method will be removed in a certain version after April 5, 2020, so please do not use this method.
      *
@@ -922,9 +940,8 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     public MessageExt viewMessage(String topic,
         String msgId) throws RemotingException, MQBrokerException, InterruptedException, MQClientException {
         try {
-            MessageId oldMsgId = MessageDecoder.decodeMessageId(msgId);
             return this.viewMessage(msgId);
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         return this.defaultMQProducerImpl.queryMessageByUniqKey(withNamespace(topic), msgId);
     }
@@ -978,8 +995,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     }
 
     /**
-     * Sets an Executor to be used for executing callback methods. If the Executor is not set, {@link
-     * NettyRemotingClient#publicExecutor} will be used.
+     * Sets an Executor to be used for executing callback methods.
      *
      * @param callbackExecutor the instance of Executor
      */
@@ -988,8 +1004,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     }
 
     /**
-     * Sets an Executor to be used for executing asynchronous send. If the Executor is not set, {@link
-     * DefaultMQProducerImpl#defaultAsyncSenderExecutor} will be used.
+     * Sets an Executor to be used for executing asynchronous send.
      *
      * @param asyncSenderExecutor the instance of Executor
      */
@@ -1018,6 +1033,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
                 // 设置消息topic
                 message.setTopic(withNamespace(message.getTopic()));
             }
+            MessageClientIDSetter.setUniqID(msgBatch);
             msgBatch.setBody(msgBatch.encode());
         } catch (Exception e) {
             throw new MQClientException("Failed to initiate the MessageBatch", e);
@@ -1142,4 +1158,31 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     public Set<Integer> getRetryResponseCodes() {
         return retryResponseCodes;
     }
+
+    public boolean isEnableBackpressureForAsyncMode() {
+        return  enableBackpressureForAsyncMode;
+    }
+
+    public void setEnableBackpressureForAsyncMode(boolean enableBackpressureForAsyncMode) {
+        this.enableBackpressureForAsyncMode = enableBackpressureForAsyncMode;
+    }
+
+    public int getBackPressureForAsyncSendNum() {
+        return backPressureForAsyncSendNum;
+    }
+
+    public void setBackPressureForAsyncSendNum(int backPressureForAsyncSendNum) {
+        this.backPressureForAsyncSendNum = backPressureForAsyncSendNum;
+        defaultMQProducerImpl.setSemaphoreAsyncSendNum(backPressureForAsyncSendNum);
+    }
+
+    public int getBackPressureForAsyncSendSize() {
+        return backPressureForAsyncSendSize;
+    }
+
+    public void setBackPressureForAsyncSendSize(int backPressureForAsyncSendSize) {
+        this.backPressureForAsyncSendSize = backPressureForAsyncSendSize;
+        defaultMQProducerImpl.setSemaphoreAsyncSendSize(backPressureForAsyncSendSize);
+    }
+
 }

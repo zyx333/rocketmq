@@ -26,16 +26,14 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.commons.lang3.StringUtils;
-
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
-import org.apache.rocketmq.client.log.ClientLogger;
-import org.apache.rocketmq.logging.InternalLogger;
 import org.apache.rocketmq.common.message.MessageAccessor;
 import org.apache.rocketmq.common.message.MessageConst;
 import org.apache.rocketmq.common.message.MessageExt;
-import org.apache.rocketmq.common.protocol.body.ProcessQueueInfo;
+import org.apache.rocketmq.remoting.protocol.body.ProcessQueueInfo;
+import org.apache.rocketmq.logging.org.slf4j.Logger;
+import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
 /**
  * 可以看做是MessageQueue在消费端的快照
@@ -46,11 +44,10 @@ public class ProcessQueue {
         Long.parseLong(System.getProperty("rocketmq.client.rebalance.lockMaxLiveTime", "30000"));
     public final static long REBALANCE_LOCK_INTERVAL = Long.parseLong(System.getProperty("rocketmq.client.rebalance.lockInterval", "20000"));
     private final static long PULL_MAX_IDLE_TIME = Long.parseLong(System.getProperty("rocketmq.client.pull.pullMaxIdleTime", "120000"));
-    private final InternalLogger log = ClientLogger.getLog();
+    private final Logger log = LoggerFactory.getLogger(ProcessQueue.class);
     private final ReadWriteLock treeMapLock = new ReentrantReadWriteLock();
     //存储消息，键为消息在ConsumerQueue中的偏移量
-    private final TreeMap<Long, MessageExt> msgTreeMap = new TreeMap<Long, MessageExt>();
-    // ProcessQueue中的消息总数
+    private final TreeMap<Long, MessageExt> msgTreeMap = new TreeMap<>();
     private final AtomicLong msgCount = new AtomicLong();
     private final AtomicLong msgSize = new AtomicLong();
     private final Lock consumeLock = new ReentrantLock();
@@ -58,7 +55,7 @@ public class ProcessQueue {
      * A subset of msgTreeMap, will only be used when orderly consume
      * 只在顺序消费时用到的临时消息存储器
      */
-    private final TreeMap<Long, MessageExt> consumingMsgOrderlyTreeMap = new TreeMap<Long, MessageExt>();
+    private final TreeMap<Long, MessageExt> consumingMsgOrderlyTreeMap = new TreeMap<>();
     private final AtomicLong tryUnlockTimes = new AtomicLong(0);
     // 当前ProcessQueue中包含的最大队列偏移量
     private volatile long queueOffsetMax = 0L;
@@ -91,7 +88,7 @@ public class ProcessQueue {
             return;
         }
 
-        int loop = msgTreeMap.size() < 16 ? msgTreeMap.size() : 16;
+        int loop = Math.min(msgTreeMap.size(), 16);
         for (int i = 0; i < loop; i++) {
             MessageExt msg = null;
             try {
@@ -101,17 +98,17 @@ public class ProcessQueue {
                         String consumeStartTimeStamp = MessageAccessor.getConsumeStartTimeStamp(msgTreeMap.firstEntry().getValue());
                         if (StringUtils.isNotEmpty(consumeStartTimeStamp) && System.currentTimeMillis() - Long.parseLong(consumeStartTimeStamp) > pushConsumer.getConsumeTimeout() * 60 * 1000) {
                             msg = msgTreeMap.firstEntry().getValue();
-                        } else {
-                            break;
                         }
-                    } else {
-                        break;
                     }
                 } finally {
                     this.treeMapLock.readLock().unlock();
                 }
             } catch (InterruptedException e) {
                 log.error("getExpiredMsg exception", e);
+            }
+
+            if (msg == null) {
+                break;
             }
 
             try {
@@ -318,7 +315,7 @@ public class ProcessQueue {
 
     // 取出一批消息进行消费
     public List<MessageExt> takeMessages(final int batchSize) {
-        List<MessageExt> result = new ArrayList<MessageExt>(batchSize);
+        List<MessageExt> result = new ArrayList<>(batchSize);
         final long now = System.currentTimeMillis();
         try {
             this.treeMapLock.writeLock().lockInterruptibly();
@@ -347,6 +344,27 @@ public class ProcessQueue {
         }
 
         return result;
+    }
+
+    /**
+     * Return the result that whether current message is exist in the process queue or not.
+     */
+    public boolean containsMessage(MessageExt message) {
+        if (message == null) {
+            // should never reach here.
+            return false;
+        }
+        try {
+            this.treeMapLock.readLock().lockInterruptibly();
+            try {
+                return this.msgTreeMap.containsKey(message.getQueueOffset());
+            } finally {
+                this.treeMapLock.readLock().unlock();
+            }
+        } catch (Throwable t) {
+            log.error("Failed to check message's existence in process queue, message={}", message, t);
+        }
+        return false;
     }
 
     public boolean hasTempMessage() {

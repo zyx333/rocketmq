@@ -534,6 +534,8 @@ public class DefaultMessageStore implements MessageStore {
     @Override
     public CompletableFuture<PutMessageResult> asyncPutMessage(MessageExtBrokerInner msg) {
 
+        // 在brokerController的初始化方法里，往putMessageHookList里添加了需要执行的hook
+        // org.apache.rocketmq.broker.BrokerController.registerMessageStoreHookª
         for (PutMessageHook putMessageHook : putMessageHookList) {
             PutMessageResult handleResult = putMessageHook.executeBeforePutMessage(msg);
             if (handleResult != null) {

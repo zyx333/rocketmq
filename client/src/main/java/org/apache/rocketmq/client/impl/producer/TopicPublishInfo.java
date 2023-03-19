@@ -71,6 +71,7 @@ public class TopicPublishInfo {
 
     public MessageQueue selectOneMessageQueue(final String lastBrokerName) {
         if (lastBrokerName == null) {
+            // 1. 如果上次失败的broker为空，则直接选择队列
             // 根据sendWhichQueue递增取模选择队列
             return selectOneMessageQueue();
         } else {
@@ -78,7 +79,7 @@ public class TopicPublishInfo {
                 int index = this.sendWhichQueue.incrementAndGet();
                 int pos = index % this.messageQueueList.size();
                 MessageQueue mq = this.messageQueueList.get(pos);
-                // 选择与上一次发送消息不同的broker，避免再次失败
+                // 2. 选择与上一次发送消息不同的broker，避免再次失败
                 if (!mq.getBrokerName().equals(lastBrokerName)) {
                     return mq;
                 }

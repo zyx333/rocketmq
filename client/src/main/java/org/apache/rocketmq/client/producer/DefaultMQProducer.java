@@ -425,7 +425,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
     }
 
     /**
-     * 单项发送消息。消息发出后立即返回，不关心发送结果
+     * 单向发送消息。消息发出后立即返回，不关心发送结果
      * Similar to <a href="https://en.wikipedia.org/wiki/User_Datagram_Protocol">UDP</a>, this method won't wait for
      * acknowledgement from broker before return. Obviously, it has maximums throughput yet potentials of message loss.
      *

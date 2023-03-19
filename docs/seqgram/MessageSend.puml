@@ -1,0 +1,9 @@
+@startuml
+
+autonumber 1
+DefaultMQProducer -> defaultMQProducerImpl: start()方法
+
+
+
+
+@enduml

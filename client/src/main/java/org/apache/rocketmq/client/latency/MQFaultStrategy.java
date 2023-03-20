@@ -99,7 +99,10 @@ public class MQFaultStrategy {
 
     public void updateFaultItem(final String brokerName, final long currentLatency, boolean isolation) {
         if (this.sendLatencyFaultEnable) {
-            // 如果isolation为TRUE，则用30000来计算延迟时间。因为30000比latencyMax数组中的最大值还大，所以退避时间取为notAvailableDuration中的最大值600000
+            // 上层调用方，有异常抛出时，isolation为TRUE；没有异常时，isolation为false。
+            // 如果isolation为TRUE，则用30000来计算延迟时间。
+            // 因为30000比latencyMax数组中的最大值还大，也就是说在有异常抛出时，退避时间取notAvailableDuration中的最大值600000
+            // 没有异常时，根据实际的消息发送耗时，来选择对应的退避时间
             long duration = computeNotAvailableDuration(isolation ? 30000 : currentLatency);
             this.latencyFaultTolerance.updateFaultItem(brokerName, currentLatency, duration);
         }

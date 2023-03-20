@@ -24,6 +24,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.rocketmq.client.common.ThreadLocalIndex;
 
+/**
+ * 生成消息broker容错
+ */
 public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> {
     private final ConcurrentHashMap<String, FaultItem> faultItemTable = new ConcurrentHashMap<>(16);
 
@@ -78,6 +81,8 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
             tmpList.add(faultItem);
         }
         if (!tmpList.isEmpty()) {
+            // 先根据可用性从高到低进行排序
+            // 然后从可用性较高的一半中，随机选择一个broker返回
             Collections.sort(tmpList);
             final int half = tmpList.size() / 2;
             if (half <= 0) {
@@ -105,6 +110,7 @@ public class LatencyFaultToleranceImpl implements LatencyFaultTolerance<String> 
         // 消息发送故障的延迟时间
         private volatile long currentLatency;
         // 故障规避的结束时间，此时间之后broker恢复可用
+        // pr:这里的命名容易有歧义 todo
         private volatile long startTimestamp;
 
         public FaultItem(final String name) {

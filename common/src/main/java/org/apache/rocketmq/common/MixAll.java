@@ -155,6 +155,7 @@ public class MixAll {
         return DLQ_GROUP_TOPIC_PREFIX + consumerGroup;
     }
 
+    // vipChannel采用不同的端口
     public static String brokerVIPChannel(final boolean isChange, final String brokerAddr) {
         if (isChange) {
             int split = brokerAddr.lastIndexOf(":");

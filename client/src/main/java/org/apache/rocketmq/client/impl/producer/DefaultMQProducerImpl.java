@@ -653,6 +653,8 @@ public class DefaultMQProducerImpl implements MQProducerInner {
                 // 上一次选择的发送消息失败的broker
                 String lastBrokerName = null == mq ? null : mq.getBrokerName();
                 // 选择消息发送的队列
+                // 当broker突然不可用时，因为前面已经拿到了路由信息topicPublishInfo，不可用的broker还在路由信息中，所以需要传入lastBrokerName来避免发送到不可用的broker。
+                // 当路由信息更新以后，不可用的broker就不会出现在路由信息里
                 MessageQueue mqSelected = this.selectOneMessageQueue(topicPublishInfo, lastBrokerName);
                 if (mqSelected != null) {
                     mq = mqSelected;
@@ -813,7 +815,7 @@ public class DefaultMQProducerImpl implements MQProducerInner {
             byte[] prevBody = msg.getBody();
             try {
                 //for MessageBatch,ID has been set in the generating process
-                // 为消息设置唯一id
+                // 非批量消息设置唯一id
                 if (!(msg instanceof MessageBatch)) {
                     MessageClientIDSetter.setUniqID(msg);
                 }

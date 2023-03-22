@@ -81,6 +81,8 @@ public class MQFaultStrategy {
                     final MessageQueue mq = tpInfo.selectOneMessageQueue();
                     if (notBestBroker != null) {
                         mq.setBrokerName(notBestBroker);
+                        // 这里需要理解queueId在不同broker上并不是全局唯一的。而是每个broker都存在着0~writeQueueNums-1的queueId。
+                        // 所以这里实际上是在notBestBroker上选取其中一个queueId！！
                         mq.setQueueId(tpInfo.getSendWhichQueue().incrementAndGet() % writeQueueNums);
                     }
                     return mq;

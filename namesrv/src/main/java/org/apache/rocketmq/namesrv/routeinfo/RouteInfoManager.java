@@ -72,6 +72,7 @@ public class RouteInfoManager {
     private final static long DEFAULT_BROKER_CHANNEL_EXPIRED_TIME = 1000 * 60 * 2;
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     // topic队列信息
+    // 这里维护了每个topic分布在哪些broker上。注意QueueData和MessageQueue的区别
     private final Map<String/* topic */, Map<String, QueueData>> topicQueueTable;
     // broker信息
     private final Map<String/* brokerName */, BrokerData> brokerAddrTable;
@@ -136,7 +137,6 @@ public class RouteInfoManager {
             } else {
                 // check and construct queue data map
                 Map<String, QueueData> queueDataMap = new HashMap<>();
-                // todo 是不是说明，一个topic下的多个队列只能分布在不同的broker上？
                 for (QueueData queueData : queueDatas) {
                     if (!this.brokerAddrTable.containsKey(queueData.getBrokerName())) {
                         log.warn("Register topic contains illegal broker, {}, {}", topic, queueData);

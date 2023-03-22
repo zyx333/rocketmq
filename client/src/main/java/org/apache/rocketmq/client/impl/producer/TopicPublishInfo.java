@@ -29,6 +29,7 @@ public class TopicPublishInfo {
     private boolean haveTopicRouterInfo = false;
     // 该topic的消息队列
     // 大小并不是writeQueueNums,而是writeQueueNums*broker数目
+    // 参见org.apache.rocketmq.client.impl.factory.MQClientInstance.topicRouteData2TopicPublishInfo中构造messageQueueList的实现
     private List<MessageQueue> messageQueueList = new ArrayList<>();
     // 用于选择消息队列。每选择一次，会自增1
     private volatile ThreadLocalIndex sendWhichQueue = new ThreadLocalIndex();

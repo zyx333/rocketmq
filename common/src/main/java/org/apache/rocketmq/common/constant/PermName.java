@@ -16,6 +16,9 @@
  */
 package org.apache.rocketmq.common.constant;
 
+/**
+ * 队列的权限定义，即org.apache.rocketmq.remoting.protocol.route.QueueData.perm的取值
+ */
 public class PermName {
     public static final int INDEX_PERM_PRIORITY = 3;
     public static final int INDEX_PERM_READ = 2;
@@ -24,6 +27,7 @@ public class PermName {
 
 
     public static final int PERM_PRIORITY = 0x1 << INDEX_PERM_PRIORITY;
+
     public static final int PERM_READ = 0x1 << INDEX_PERM_READ;
     public static final int PERM_WRITE = 0x1 << INDEX_PERM_WRITE;
     public static final int PERM_INHERIT = 0x1 << INDEX_PERM_INHERIT;

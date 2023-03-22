@@ -136,6 +136,7 @@ public class RouteInfoManager {
             } else {
                 // check and construct queue data map
                 Map<String, QueueData> queueDataMap = new HashMap<>();
+                // todo 是不是说明，一个topic下的多个队列只能分布在不同的broker上？
                 for (QueueData queueData : queueDatas) {
                     if (!this.brokerAddrTable.containsKey(queueData.getBrokerName())) {
                         log.warn("Register topic contains illegal broker, {}, {}", topic, queueData);

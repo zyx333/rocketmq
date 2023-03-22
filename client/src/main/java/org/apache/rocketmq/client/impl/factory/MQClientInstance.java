@@ -118,6 +118,7 @@ public class MQClientInstance {
     private final Lock lockHeartbeat = new ReentrantLock();
 
     /**
+     * todo：注释错了？key是brokerName
      * The container which stores the brokerClusterInfo. The key of the map is the brokerCluster name.
      * And the value is the broker instance list that belongs to the broker cluster.
      * For the sub map, the key is the id of single broker instance, and the value is the address.
@@ -610,6 +611,7 @@ public class MQClientInstance {
         }
     }
 
+    // 从NameServer上获取topic路由信息
     public boolean updateTopicRouteInfoFromNameServer(final String topic, boolean isDefault,
         DefaultMQProducer defaultMQProducer) {
         try {
@@ -668,7 +670,7 @@ public class MQClientInstance {
                                 for (Entry<String, MQProducerInner> entry : this.producerTable.entrySet()) {
                                     MQProducerInner impl = entry.getValue();
                                     if (impl != null) {
-                                        // 更新topic的信息topicPublishInfoTable
+                                        // 更新topic的信息到缓存topicPublishInfoTable中
                                         impl.updateTopicPublishInfo(topic, publishInfo);
                                     }
                                 }

@@ -471,6 +471,7 @@ public class TopicConfigManager extends ConfigManager {
 
         topicConfig.setAttributes(finalAttributes);
 
+        // 创建或更新topic，并把topic信息保存到topicConfigTable中
         TopicConfig old = this.topicConfigTable.put(topicConfig.getTopicName(), topicConfig);
         if (old != null) {
             log.info("update topic config, old:[{}] new:[{}]", old, topicConfig);
@@ -481,6 +482,7 @@ public class TopicConfigManager extends ConfigManager {
         long stateMachineVersion = brokerController.getMessageStore() != null ? brokerController.getMessageStore().getStateMachineVersion() : 0;
         dataVersion.nextVersion(stateMachineVersion);
 
+        // 持久化到文件中
         this.persist(topicConfig.getTopicName(), topicConfig);
     }
 

@@ -68,6 +68,7 @@ public class MQFaultStrategy {
                 // 遍历队列，如果对应的broker可用，则直接返回对应的队列
                 for (int i = 0; i < tpInfo.getMessageQueueList().size(); i++) {
                     // 取模获取可用的MessageQueue
+                    // 这里是在多个broker上的队列中进行轮询
                     int pos = index++ % tpInfo.getMessageQueueList().size();
                     MessageQueue mq = tpInfo.getMessageQueueList().get(pos);
                     // 判断broker是否可用

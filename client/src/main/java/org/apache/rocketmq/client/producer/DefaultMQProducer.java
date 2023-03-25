@@ -535,6 +535,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
 
     /**
      * 指定消息负载算法进行消息发送
+     * 通过selector参数指定发送到特定的队列
      * Same to {@link #send(Message)} with message queue selector specified.
      *
      * @param msg Message to send.

@@ -72,11 +72,12 @@ public class RouteInfoManager {
     private final static long DEFAULT_BROKER_CHANNEL_EXPIRED_TIME = 1000 * 60 * 2;
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
     // topic队列信息
-    // 这里维护了每个topic分布在哪些broker上。注意QueueData和MessageQueue的区别
+    // 这里维护了每个topic分布在哪些主broker上，QueueData和master一一对应。注意QueueData和MessageQueue的区别
     private final Map<String/* topic */, Map<String, QueueData>> topicQueueTable;
     // broker信息
     private final Map<String/* brokerName */, BrokerData> brokerAddrTable;
-    // 集群信息,存储了集群中的broker名称
+    // 集群信息,存储了集群中的broker名称.
+    // clusterAddrTable和brokerAddrTable两个字段是"静态的"。也就是在配置集群时就已经确定，从配置文件进行读取
     private final Map<String/* clusterName */, Set<String/* brokerName */>> clusterAddrTable;
     // 活跃broker信息。Namesrv每次收到心跳包时会更新该信息
     private final Map<BrokerAddrInfo/* brokerAddr */, BrokerLiveInfo> brokerLiveTable;
@@ -224,6 +225,7 @@ public class RouteInfoManager {
     }
 
     // 注册broker
+    // 此方法里完成topic路由信息的创建
     public RegisterBrokerResult registerBroker(
         final String clusterName,
         final String brokerAddr,

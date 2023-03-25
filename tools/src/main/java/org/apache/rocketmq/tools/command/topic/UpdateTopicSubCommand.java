@@ -167,9 +167,11 @@ public class UpdateTopicSubCommand implements SubCommand {
 
                 defaultMQAdminExt.start();
 
+                // 获取集群下所有主节点的地址
                 Set<String> masterSet =
                     CommandUtil.fetchMasterAddrByClusterName(defaultMQAdminExt, clusterName);
                 for (String addr : masterSet) {
+                    // 在主节点创建topic
                     defaultMQAdminExt.createAndUpdateTopicConfig(addr, topicConfig);
                     System.out.printf("create topic to %s success.%n", addr);
                 }

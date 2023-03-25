@@ -369,7 +369,7 @@ public class MQClientAPIImpl implements NameServerUpdateCallback {
 
     }
 
-    // 创建队列
+    // 创建topic
     public void createTopic(final String addr, final String defaultTopic, final TopicConfig topicConfig,
         final long timeoutMillis)
         throws RemotingException, MQBrokerException, InterruptedException, MQClientException {

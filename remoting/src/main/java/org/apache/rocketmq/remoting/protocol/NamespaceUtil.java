@@ -90,6 +90,7 @@ public class NamespaceUtil {
             return resourceWithOutNamespace;
         }
 
+        // 获得原始的topic名称
         String resourceWithoutRetryAndDLQ = withOutRetryAndDLQ(resourceWithOutNamespace);
         StringBuilder stringBuilder = new StringBuilder();
 

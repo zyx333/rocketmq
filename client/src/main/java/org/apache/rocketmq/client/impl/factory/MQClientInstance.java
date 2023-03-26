@@ -991,6 +991,7 @@ public class MQClientInstance {
         if (topicEndPointsTable.get(mq.getTopic()) != null && !topicEndPointsTable.get(mq.getTopic()).isEmpty()) {
             return topicEndPointsTable.get(mq.getTopic()).get(mq);
         }
+        // todo 为什么不优先从MessageQueue取brokerName；而是从topicEndPointsTable取？
         return mq.getBrokerName();
     }
 

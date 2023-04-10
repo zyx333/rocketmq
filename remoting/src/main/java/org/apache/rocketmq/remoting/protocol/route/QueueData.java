@@ -23,7 +23,9 @@ package org.apache.rocketmq.remoting.protocol.route;
 public class QueueData implements Comparable<QueueData> {
     // 注意：此类的属性中并不存在queueId，因为每个主broker上都存在着编号为0~writeQueueNums-1的queueId
     private String brokerName;
+    // 消费者消费消息的队列数
     private int readQueueNums;
+    // 生产者生产消息的队列数
     private int writeQueueNums;
     // 表示权限
     private int perm;

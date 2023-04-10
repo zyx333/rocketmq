@@ -324,6 +324,7 @@ public class RouteInfoManager {
                                 // Wipe write perm for prime slave
                                 topicConfig.setPerm(topicConfig.getPerm() & (~PermName.PERM_WRITE));
                             }
+                            // 只有maser会创建QueueData；slave和master保持一致即可
                             this.createAndUpdateQueueData(brokerName, topicConfig);
                         }
                     }
@@ -448,6 +449,7 @@ public class RouteInfoManager {
         }
     }
 
+    // broker注册时，创建或更新topic队列信息
     private void createAndUpdateQueueData(final String brokerName, final TopicConfig topicConfig) {
         QueueData queueData = new QueueData();
         queueData.setBrokerName(brokerName);

@@ -101,6 +101,7 @@ public class MQClientInstance {
 
     /**
      * The container of the consumer in the current client. The key is the name of consumerGroup.
+     * 说明一个进程下，在同一个消费组内只能注册一个消费者
      */
     private final ConcurrentMap<String, MQConsumerInner> consumerTable = new ConcurrentHashMap<>();
 
@@ -1084,6 +1085,7 @@ public class MQClientInstance {
         return 0;
     }
 
+    // 随机从一个broker中，获取消费者id列表
     public List<String> findConsumerIdList(final String topic, final String group) {
         String brokerAddr = this.findBrokerAddrByTopic(topic);
         if (null == brokerAddr) {

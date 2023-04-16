@@ -563,6 +563,7 @@ public abstract class RebalanceImpl {
             mQClientFactory.rebalanceLater(500);
         }
 
+        // 把拉取请求加到队列中，之后由拉取线程拉取任务. 见org.apache.rocketmq.client.impl.consumer.PullMessageService
         this.dispatchPullRequest(pullRequestList, 500);
 
         return changed;

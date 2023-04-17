@@ -292,6 +292,7 @@ public class PullAPIWrapper {
             return this.defaultBrokerId;
         }
 
+        // 获取建议拉取消息的brokerId
         AtomicLong suggest = this.pullFromWhichNodeTable.get(mq);
         if (suggest != null) {
             return suggest.get();

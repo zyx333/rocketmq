@@ -186,6 +186,7 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor implement
             }
             int reconsumeTimes = requestHeader.getReconsumeTimes() == null ? 0 : requestHeader.getReconsumeTimes();
             // Using '>' instead of '>=' to compatible with the case that reconsumeTimes here are increased by client.
+            // 大于最大重试次数时，放到死信队列
             if (reconsumeTimes > maxReconsumeTimes) {
                 Attributes attributes = BrokerMetricsManager.newAttributesBuilder()
                     .put(LABEL_CONSUMER_GROUP, requestHeader.getProducerGroup())
@@ -195,6 +196,7 @@ public class SendMessageProcessor extends AbstractSendMessageProcessor implement
                 BrokerMetricsManager.sendToDlqMessages.add(1, attributes);
 
                 properties.put(MessageConst.PROPERTY_DELAY_TIME_LEVEL, "-1");
+                // 死信队列
                 newTopic = MixAll.getDLQTopic(groupName);
                 int queueIdInt = randomQueueId(DLQ_NUMS_PER_GROUP);
                 topicConfig = this.brokerController.getTopicConfigManager().createTopicInSendMessageBackMethod(newTopic,

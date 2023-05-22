@@ -875,6 +875,7 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
         throw new MQClientException("The broker[" + desBrokerName + "] not exist", null);
     }
 
+    // 最大重试次数
     public int getMaxReconsumeTimes() {
         // default reconsume times: 16
         if (this.defaultMQPushConsumer.getMaxReconsumeTimes() == -1) {
@@ -1549,6 +1550,8 @@ public class DefaultMQPushConsumerImpl implements MQConsumerInner {
     public void resetRetryAndNamespace(final List<MessageExt> msgs, String consumerGroup) {
         final String groupTopic = MixAll.getRetryTopic(consumerGroup);
         for (MessageExt msg : msgs) {
+            // retryTopic 保存的是原topic。
+            // 这里的逻辑就是说，判断msg的topic如果是重试队列，就把消息的topic设置为原topic
             String retryTopic = msg.getProperty(MessageConst.PROPERTY_RETRY_TOPIC);
             if (retryTopic != null && groupTopic.equals(msg.getTopic())) {
                 msg.setTopic(retryTopic);

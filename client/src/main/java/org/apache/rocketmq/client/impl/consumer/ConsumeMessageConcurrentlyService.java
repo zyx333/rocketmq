@@ -307,6 +307,7 @@ public class ConsumeMessageConcurrentlyService implements ConsumeMessageService 
                     }
                     boolean result = this.sendMessageBack(msg, context);
                     if (!result) {
+                        // 失败时更新重新消费的次数，因为消费失败有重试次数限制
                         msg.setReconsumeTimes(msg.getReconsumeTimes() + 1);
                         msgBackFailed.add(msg);
                     }

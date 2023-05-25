@@ -443,6 +443,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
                 return;
             }
 
+            // 确保只有一个线程在处理队列messageQueue
             final Object objLock = messageQueueLock.fetchLockObject(this.messageQueue);
             synchronized (objLock) {
                 // 广播模式无需加锁
@@ -507,6 +508,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
                             ConsumeReturnType returnType = ConsumeReturnType.SUCCESS;
                             boolean hasException = false;
                             try {
+                                // 获取消费锁
                                 this.processQueue.getConsumeLock().lock();
                                 if (this.processQueue.isDropped()) {
                                     log.warn("consumeMessage, the message queue not be able to consume, because it's dropped. {}",
@@ -524,6 +526,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
                                     messageQueue), e);
                                 hasException = true;
                             } finally {
+                                // 释放消费锁
                                 this.processQueue.getConsumeLock().unlock();
                             }
 
@@ -581,6 +584,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
                         return;
                     }
 
+                    // 没有被锁定的话，则尝试重新加锁
                     ConsumeMessageOrderlyService.this.tryLockLaterAndReconsume(this.messageQueue, this.processQueue, 100);
                 }
             }

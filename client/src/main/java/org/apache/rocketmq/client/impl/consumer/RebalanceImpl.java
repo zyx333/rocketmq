@@ -221,6 +221,7 @@ public abstract class RebalanceImpl {
                                     log.info("the message queue locked OK, Group: {} {}", this.consumerGroup, mq);
                                 }
                                 // 更新锁定状态为true，及锁定时间
+                                // 先向broker发送请求锁定MessageQueue，MessageQueue锁定成功，则把对应的processQueue也认为锁定成功
                                 processQueue.setLocked(true);
                                 processQueue.setLastLockTimestamp(System.currentTimeMillis());
                             } else {

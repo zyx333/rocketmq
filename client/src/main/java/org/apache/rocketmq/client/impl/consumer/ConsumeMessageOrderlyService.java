@@ -301,6 +301,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
                     break;
                 case SUSPEND_CURRENT_QUEUE_A_MOMENT:
                     this.getConsumerStatsManager().incConsumeFailedTPS(consumerGroup, consumeRequest.getMessageQueue().getTopic(), msgs.size());
+                    // check reconsume times
                     if (checkReconsumeTimes(msgs)) {
                         // 如果任意一条消息重试次数没有达到最大；或者虽然重试次数达到最大但是进入死信队列失败，则走到此逻辑，重新消费
                         consumeRequest.getProcessQueue().makeMessageToConsumeAgain(msgs);
@@ -375,6 +376,7 @@ public class ConsumeMessageOrderlyService implements ConsumeMessageService {
             for (MessageExt msg : msgs) {
                 if (msg.getReconsumeTimes() >= getMaxReconsumeTimes()) {
                     MessageAccessor.setReconsumeTime(msg, String.valueOf(msg.getReconsumeTimes()));
+                    // exceeded max reconsume times, then put to dead letter queue
                     if (!sendMessageBack(msg)) {
                         suspend = true;
                         msg.setReconsumeTimes(msg.getReconsumeTimes() + 1);

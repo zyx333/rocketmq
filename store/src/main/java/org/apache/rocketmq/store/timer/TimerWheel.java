@@ -64,6 +64,7 @@ public class TimerWheel {
                 throw new RuntimeException(String.format("Timer wheel length:%d != expected:%s",
                     randomAccessFile.length(), wheelLength));
             }
+            // 创建一个长度为wheelLength的文件内存空间，用于存放slot 数据
             randomAccessFile.setLength(wheelLength);
             fileChannel = randomAccessFile.getChannel();
             mappedByteBuffer = fileChannel.map(FileChannel.MapMode.READ_WRITE, 0, wheelLength);
@@ -123,10 +124,12 @@ public class TimerWheel {
     //testable
     public Slot getRawSlot(long timeMs) {
         localBuffer.get().position(getSlotIndex(timeMs) * Slot.SIZE);
+        // allocate space for slot
         return new Slot(localBuffer.get().getLong() * precisionMs,
             localBuffer.get().getLong(), localBuffer.get().getLong(), localBuffer.get().getInt(), localBuffer.get().getInt());
     }
 
+    // 根据毫秒数获取在时间轮中的索引
     public int getSlotIndex(long timeMs) {
         return (int) (timeMs / precisionMs % (slotsTotal * 2));
     }

@@ -756,6 +756,7 @@ public class BrokerController {
                 if (this.brokerConfig.isEnableControllerMode()) {
                     this.replicasManager = new ReplicasManager(this);
                 }
+                // check if timer wheel is enabled
                 if (messageStoreConfig.isTimerWheelEnable()) {
                     this.timerCheckpoint = new TimerCheckpoint(BrokerPathConfigHelper.getTimerCheckPath(messageStoreConfig.getStorePathRootDir()));
                     TimerMetrics timerMetrics = new TimerMetrics(BrokerPathConfigHelper.getTimerMetricsPath(messageStoreConfig.getStorePathRootDir()));

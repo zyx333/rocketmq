@@ -18,9 +18,12 @@ package org.apache.rocketmq.store.timer;
 
 public class Slot {
     public static final short SIZE = 32;
+    // 执行的时间戳
     public final long timeMs;
+    // 该 slot 第一个 timeLog 的偏移量
     public final long firstPos;
     public final long lastPos;
+    // 该 slot 中timelog 的数量
     public final int num;
     public final int magic; //no use now, just keep it
 

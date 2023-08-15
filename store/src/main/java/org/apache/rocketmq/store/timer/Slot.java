@@ -16,11 +16,12 @@
  */
 package org.apache.rocketmq.store.timer;
 
+// 即时间轮中的一个槽位，每个slot表示某一时刻需要投递的所有消息信息
 public class Slot {
     public static final short SIZE = 32;
     // 执行的时间戳
     public final long timeMs;
-    // 该 slot 第一个 timeLog 的偏移量
+    // 该 slot 第一个 timeLog 的偏移量，即链表尾
     public final long firstPos;
     public final long lastPos;
     // 该 slot 中timelog 的数量

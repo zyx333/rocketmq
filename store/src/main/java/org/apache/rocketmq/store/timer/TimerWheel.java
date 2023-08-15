@@ -52,6 +52,7 @@ public class TimerWheel {
         this.slotsTotal = slotsTotal;
         this.precisionMs = precisionMs;
         this.fileName = fileName;
+        // TODO why multiply by 2?
         this.wheelLength = this.slotsTotal * 2 * Slot.SIZE;
 
         File file = new File(fileName);

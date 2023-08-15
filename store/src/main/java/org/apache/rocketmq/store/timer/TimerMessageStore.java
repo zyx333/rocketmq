@@ -69,6 +69,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.rocketmq.store.util.PerfCounter;
 
 public class TimerMessageStore {
+    // 定时消息暂存队列
     public static final String TIMER_TOPIC = TopicValidator.SYSTEM_TOPIC_PREFIX + "wheel_timer";
     public static final String TIMER_OUT_MS = MessageConst.PROPERTY_TIMER_OUT_MS;
     public static final String TIMER_ENQUEUE_MS = MessageConst.PROPERTY_TIMER_ENQUEUE_MS;
@@ -640,8 +641,10 @@ public class TimerMessageStore {
                         long delayedTime = Long.parseLong(msgExt.getProperty(TIMER_OUT_MS));
                         // use CQ offset, not offset in Message
                         msgExt.setQueueOffset(offset + (i / ConsumeQueue.CQ_STORE_UNIT_SIZE));
+
                         TimerRequest timerRequest = new TimerRequest(offsetPy, sizePy, delayedTime, System.currentTimeMillis(), MAGIC_DEFAULT, msgExt);
-                        while (true) {
+                        while (true) { // 不断重试，直到成功入队
+                            // timerRequest放入队列
                             if (enqueuePutQueue.offer(timerRequest, 3, TimeUnit.SECONDS)) {
                                 break;
                             }

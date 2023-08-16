@@ -1233,6 +1233,7 @@ public class TimerMessageStore {
 
     }
 
+    // 遍历定时消息队列rmq_sys_wheel_timer，将消息放入到阻塞队列enqueuePutQueue
     class TimerEnqueueGetService extends ServiceThread {
 
         @Override public String getServiceName() {
@@ -1248,6 +1249,7 @@ public class TimerMessageStore {
             TimerMessageStore.LOGGER.info(this.getServiceName() + " service start");
             while (!this.isStopped()) {
                 try {
+                    // 只是用 id 为 0 的队列
                     if (!TimerMessageStore.this.enqueue(0)) {
                         waitForRunning(100 * precisionMs / 1000);
                     }
@@ -1259,6 +1261,7 @@ public class TimerMessageStore {
         }
     }
 
+    // 从enqueuePutQueue中取出消息进行投递
     class TimerEnqueuePutService extends ServiceThread {
 
         @Override public String getServiceName() {

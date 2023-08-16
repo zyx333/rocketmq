@@ -90,6 +90,7 @@ public class TimerMessageStore {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private final PerfCounter.Ticks perfs = new PerfCounter.Ticks(LOGGER);
+    // functions of these queues?
     private final BlockingQueue<TimerRequest> enqueuePutQueue;
     private final BlockingQueue<List<TimerRequest>> dequeueGetQueue;
     private final BlockingQueue<TimerRequest> dequeuePutQueue;
@@ -1307,8 +1308,10 @@ public class TimerMessageStore {
                             try {
                                 perfs.startTick("enqueue_put");
                                 if (shouldRunningDequeue && req.getDelayTime() < currWriteTimeMs) {
+                                    // 已到期任务加到dequeuePutQueue，准备投递到CommitLog
                                     dequeuePutQueue.put(req);
                                 } else {
+                                    // 放到时间轮
                                     boolean doEnqueueRes = doEnqueue(req.getOffsetPy(), req.getSizePy(), req.getDelayTime(), req.getMsg());
                                     req.idempotentRelease(doEnqueueRes || storeConfig.isTimerSkipUnknownError());
                                 }

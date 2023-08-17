@@ -860,6 +860,7 @@ public class TimerMessageStore {
             return -1;
         }
 
+        // 取出时间槽
         Slot slot = timerWheel.getSlot(currReadTimeMs);
         if (-1 == slot.timeMs) {
             moveReadTime();

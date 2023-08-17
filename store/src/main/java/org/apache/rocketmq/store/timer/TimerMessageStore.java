@@ -1390,6 +1390,7 @@ public class TimerMessageStore {
         }
     }
 
+    // poll message from queue dequeuePutQueue and put to CommitLog
     class TimerDequeuePutMessageService extends AbstractStateService {
 
         @Override public String getServiceName() {
@@ -1425,7 +1426,9 @@ public class TimerMessageStore {
                                 perfs.startTick("dequeue_put");
                                 addMetric(tr.getMsg(), -1);
                                 MessageExtBrokerInner msg = convert(tr.getMsg(), tr.getEnqueueTime(), needRoll(tr.getMagic()));
+                                // 投递消息到 commitLog
                                 doRes = PUT_NEED_RETRY != doPut(msg, needRoll(tr.getMagic()));
+                                // retry if failed until success
                                 while (!doRes && !isStopped()) {
                                     if (!isRunningDequeue()) {
                                         dequeueStatusChangeFlag = true;
@@ -1438,6 +1441,7 @@ public class TimerMessageStore {
                                 perfs.endTick("dequeue_put");
                             } catch (Throwable t) {
                                 LOGGER.info("Unknown error", t);
+                                // 发生异常时，根据配置决定是否继续投递
                                 if (storeConfig.isTimerSkipUnknownError()) {
                                     doRes = true;
                                 } else {

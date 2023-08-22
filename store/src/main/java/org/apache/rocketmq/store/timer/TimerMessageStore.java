@@ -1041,10 +1041,12 @@ public class TimerMessageStore {
         if (escapeBridgeHook != null) {
             putMessageResult = escapeBridgeHook.apply(message);
         } else {
+            // 投递消息
             putMessageResult = messageStore.putMessage(message);
         }
 
         int retryNum = 0;
+        // retry 3 times
         while (retryNum < 3) {
             if (null == putMessageResult || null == putMessageResult.getPutMessageStatus()) {
                 retryNum++;

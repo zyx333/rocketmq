@@ -702,6 +702,7 @@ public class TimerMessageStore {
         }
         String realTopic = messageExt.getProperty(MessageConst.PROPERTY_REAL_TOPIC);
         Slot slot = timerWheel.getSlot(delayedTime);
+        // 根据TimerLog 的数据结构写入数据
         ByteBuffer tmpBuffer = timerLogBuffer;
         tmpBuffer.clear();
         tmpBuffer.putInt(TimerLog.UNIT_SIZE); //size

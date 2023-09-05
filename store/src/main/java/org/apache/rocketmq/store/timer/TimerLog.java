@@ -58,6 +58,8 @@ public class TimerLog {
         return append(data, 0, data.length);
     }
 
+    // pos 表示从 数组data的哪个位置开始写到mappedFile；上游传参都是 0
+    // len 表示写入的字节数
     public long append(byte[] data, int pos, int len) {
         MappedFile mappedFile = this.mappedFileQueue.getLastMappedFile();
         if (null == mappedFile || mappedFile.isFull()) {
@@ -68,6 +70,7 @@ public class TimerLog {
             return -1;
         }
         if (len + MIN_BLANK_LEN > mappedFile.getFileSize() - mappedFile.getWrotePosition()) {
+            // MIN_BLANK_LEN 文件末尾的保留位置，记录的信息如下
             ByteBuffer byteBuffer = ByteBuffer.allocate(MIN_BLANK_LEN);
             byteBuffer.putInt(mappedFile.getFileSize() - mappedFile.getWrotePosition());
             byteBuffer.putLong(0);
@@ -90,6 +93,7 @@ public class TimerLog {
             log.error("Append error for timer log");
             return -1;
         }
+        // 返回写入的起始位置
         return currPosition;
     }
 

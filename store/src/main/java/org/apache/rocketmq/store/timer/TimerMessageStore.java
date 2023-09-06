@@ -71,6 +71,7 @@ import org.apache.rocketmq.store.util.PerfCounter;
 public class TimerMessageStore {
     // 定时消息暂存队列
     public static final String TIMER_TOPIC = TopicValidator.SYSTEM_TOPIC_PREFIX + "wheel_timer";
+    // 消息延迟时间
     public static final String TIMER_OUT_MS = MessageConst.PROPERTY_TIMER_OUT_MS;
     public static final String TIMER_ENQUEUE_MS = MessageConst.PROPERTY_TIMER_ENQUEUE_MS;
     public static final String TIMER_DEQUEUE_MS = MessageConst.PROPERTY_TIMER_DEQUEUE_MS;
@@ -101,6 +102,7 @@ public class TimerMessageStore {
     private volatile int state = INITIAL;
     private final ScheduledExecutorService scheduler;
 
+    // 存储原始定时消息
     private final MessageStore messageStore;
     private final TimerWheel timerWheel;
     private final TimerLog timerLog;

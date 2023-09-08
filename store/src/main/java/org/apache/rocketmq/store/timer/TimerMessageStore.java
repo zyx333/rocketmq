@@ -703,6 +703,7 @@ public class TimerMessageStore {
             magic = magic | MAGIC_DELETE;
         }
         String realTopic = messageExt.getProperty(MessageConst.PROPERTY_REAL_TOPIC);
+        // 根据延迟时间获取槽位
         Slot slot = timerWheel.getSlot(delayedTime);
         // 根据TimerLog 的数据结构写入数据
         ByteBuffer tmpBuffer = timerLogBuffer;

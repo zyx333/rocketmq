@@ -25,6 +25,7 @@ public class TimerRequest {
 
     private final long offsetPy;
     private final int sizePy;
+    // 表示的是消息投递的时间戳
     private final long delayTime;
 
     private final long enqueueTime;

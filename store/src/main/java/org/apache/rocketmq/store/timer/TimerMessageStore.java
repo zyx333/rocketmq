@@ -1524,6 +1524,7 @@ public class TimerMessageStore {
                                         tr.idempotentRelease();
                                         perfs.getCounter("dequeue_delete").flow(1);
                                     } else {
+                                        // 只有这一个分支的消息会放到dequeuePutQueue，之后进行投递
                                         tr.setMsg(msgExt);
                                         while (!isStopped() && !doRes) {
                                             doRes = dequeuePutQueue.offer(tr, 3, TimeUnit.SECONDS);

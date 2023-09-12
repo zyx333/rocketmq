@@ -23,6 +23,7 @@ public class Slot {
     public final long timeMs;
     // 该 slot 第一个 timeLog 的偏移量，即链表尾
     public final long firstPos;
+    // 链表头
     public final long lastPos;
     // 该 slot 中timelog 的数量
     public final int num;

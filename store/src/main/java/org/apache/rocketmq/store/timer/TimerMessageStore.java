@@ -116,7 +116,9 @@ public class TimerMessageStore {
     private final TimerDequeueGetMessageService[] dequeueGetMessageServices;
     private final TimerFlushService timerFlushService;
 
+    // 遍历时间轮当前所处的时间戳位置
     private volatile long currReadTimeMs;
+    // 定时消息当前处理到的时间戳位置
     private volatile long currWriteTimeMs;
     private volatile long preReadTimeMs;
     private volatile long commitReadTimeMs;
@@ -881,6 +883,7 @@ public class TimerMessageStore {
             LinkedList<SelectMappedBufferResult> sbrs = new LinkedList<>();
             SelectMappedBufferResult timeSbr = null;
             //read the timer log one by one
+            // 从链表头开始遍历
             while (currOffsetPy != -1) {
                 perfs.startTick("dequeue_read_timerlog");
                 if (null == timeSbr || timeSbr.getStartOffset() > currOffsetPy) {
@@ -894,6 +897,7 @@ public class TimerMessageStore {
                 }
                 long prevPos = -1;
                 try {
+                    // 读取 timerLog信息
                     int position = (int) (currOffsetPy % timerLogFileSize);
                     timeSbr.getByteBuffer().position(position);
                     timeSbr.getByteBuffer().getInt(); //size
@@ -905,6 +909,7 @@ public class TimerMessageStore {
                     int sizePy = timeSbr.getByteBuffer().getInt();
                     TimerRequest timerRequest = new TimerRequest(offsetPy, sizePy, delayedTime, enqueueTime, magic);
                     timerRequest.setDeleteList(deleteUniqKeys);
+                    // 处理撤回的消息
                     if (needDelete(magic) && !needRoll(magic)) {
                         deleteMsgStack.add(timerRequest);
                     } else {
@@ -920,6 +925,7 @@ public class TimerMessageStore {
             if (deleteMsgStack.size() == 0 && normalMsgStack.size() == 0) {
                 LOGGER.warn("dequeue time:{} but read nothing from timerlog", currReadTimeMs);
             }
+            // 已经处理的消息释放空间
             for (SelectMappedBufferResult sbr : sbrs) {
                 if (null != sbr) {
                     sbr.release();
@@ -1344,6 +1350,8 @@ public class TimerMessageStore {
                             holdMomentForUnknownError();
                         }
                     }
+
+                    // 记录TimerRequest提交的偏移量
                     commitQueueOffset = trs.get(trs.size() - 1).getMsg().getQueueOffset();
                     maybeMoveWriteTime();
                 } catch (Throwable e) {
@@ -1499,6 +1507,7 @@ public class TimerMessageStore {
                             long start = System.currentTimeMillis();
                             MessageExt msgExt = getMessageByCommitOffset(tr.getOffsetPy(), tr.getSizePy());
                             if (null != msgExt) {
+                                // 判断是否取消投递
                                 if (needDelete(tr.getMagic()) && !needRoll(tr.getMagic())) {
                                     if (msgExt.getProperty(MessageConst.PROPERTY_TIMER_DEL_UNIQKEY) != null && tr.getDeleteList() != null) {
                                         tr.getDeleteList().add(msgExt.getProperty(MessageConst.PROPERTY_TIMER_DEL_UNIQKEY));

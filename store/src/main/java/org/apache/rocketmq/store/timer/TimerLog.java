@@ -32,7 +32,7 @@ public class TimerLog {
     private final static int MIN_BLANK_LEN = 4 + 8 + 4;
     public final static int UNIT_SIZE = 4  //size
             + 8 //prev pos 即前一条记录的位置
-            + 4 //magic value
+            + 4 //magic value 记录一些状态的标志位，如消息是否撤回
             + 8 //curr write time, for trace
             + 4 //delayed time, for check， 定时时间
             + 8 //offsetPy， 该条消息在commitLog中的偏移量

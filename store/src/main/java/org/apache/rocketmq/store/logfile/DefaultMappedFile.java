@@ -77,7 +77,7 @@ public class DefaultMappedFile extends AbstractMappedFile {
      * Message will put to here first, and then reput to FileChannel if writeBuffer is not null.
      */
     protected ByteBuffer writeBuffer = null;
-    // 对外内存池
+    // 堆外内存池
     protected TransientStorePool transientStorePool = null;
     protected String fileName;
     protected long fileFromOffset;
@@ -137,6 +137,7 @@ public class DefaultMappedFile extends AbstractMappedFile {
 
         try {
             this.fileChannel = new RandomAccessFile(this.file, "rw").getChannel();
+            // Java 中 mmap的实现
             this.mappedByteBuffer = this.fileChannel.map(MapMode.READ_WRITE, 0, fileSize);
             TOTAL_MAPPED_VIRTUAL_MEMORY.addAndGet(fileSize);
             TOTAL_MAPPED_FILES.incrementAndGet();
@@ -432,6 +433,8 @@ public class DefaultMappedFile extends AbstractMappedFile {
         }
 
         if (commitLeastPages > 0) {
+            // 计算当前写指针与上一次提交指针之间的页数是否大于 commitLeastPages
+            // 有足够的脏页时才提交
             return ((write / OS_PAGE_SIZE) - (commit / OS_PAGE_SIZE)) >= commitLeastPages;
         }
 

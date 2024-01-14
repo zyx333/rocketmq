@@ -55,6 +55,7 @@ import org.apache.rocketmq.store.util.LibC;
 import sun.nio.ch.DirectBuffer;
 
 public class DefaultMappedFile extends AbstractMappedFile {
+    // 4K，操作系统页大小
     public static final int OS_PAGE_SIZE = 1024 * 4;
     protected static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
 
@@ -68,6 +69,7 @@ public class DefaultMappedFile extends AbstractMappedFile {
 
     protected volatile int wrotePosition;
     protected volatile int committedPosition;
+    // 该位置之前的数据已经持久化到磁盘
     protected volatile int flushedPosition;
     protected int fileSize;
     protected FileChannel fileChannel;
@@ -75,10 +77,12 @@ public class DefaultMappedFile extends AbstractMappedFile {
      * Message will put to here first, and then reput to FileChannel if writeBuffer is not null.
      */
     protected ByteBuffer writeBuffer = null;
+    // 对外内存池
     protected TransientStorePool transientStorePool = null;
     protected String fileName;
     protected long fileFromOffset;
     protected File file;
+    // 物理文件对应的内存映射 buffer
     protected MappedByteBuffer mappedByteBuffer;
     protected volatile long storeTimestamp = 0;
     protected boolean firstCreateInQueue = false;

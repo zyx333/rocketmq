@@ -1542,6 +1542,7 @@ public class CommitLog implements Swappable {
         public void run() {
             CommitLog.log.info(this.getServiceName() + " service started");
 
+            // 1. 服务正常时，通过循环提交请求
             while (!this.isStopped()) {
                 try {
                     // requestsRead遍历完成后，如果requestsWrite队列不为空，那么这里的wait是不会生效的。
@@ -1561,6 +1562,7 @@ public class CommitLog implements Swappable {
                 CommitLog.log.warn("GroupCommitService Exception, ", e);
             }
 
+            // 2. 服务停止后，把队列中剩余的请求提交
             this.swapRequests();
             this.doCommit();
 
@@ -1949,6 +1951,7 @@ public class CommitLog implements Swappable {
                     service.putRequest(request);
                     return request.future();
                 } else {
+                    // 只唤醒刷盘线程，不等待刷盘结束。与异步刷盘逻辑一致
                     service.wakeup();
                     return CompletableFuture.completedFuture(PutMessageStatus.PUT_OK);
                 }

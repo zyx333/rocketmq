@@ -480,6 +480,7 @@ public class DefaultMappedFile extends AbstractMappedFile {
         return null;
     }
 
+    // 根据偏移量获取当前 mappedFile 可以读取的数据
     @Override
     public SelectMappedBufferResult selectMappedBuffer(int pos) {
         int readPosition = getReadPosition();

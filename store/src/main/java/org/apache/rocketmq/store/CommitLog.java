@@ -1510,6 +1510,7 @@ public class CommitLog implements Swappable {
                 for (GroupCommitRequest req : this.requestsRead) {
                     // There may be a message in the next file, so a maximum of
                     // two times the flush
+                    // 已刷盘指针大于等于提交的刷盘点则说明刷盘成功
                     boolean flushOK = CommitLog.this.mappedFileQueue.getFlushedWhere() >= req.getNextOffset();
                     // 重试策略，最多刷两次
                     for (int i = 0; i < 2 && !flushOK; i++) {

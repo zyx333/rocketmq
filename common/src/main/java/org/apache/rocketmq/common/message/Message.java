@@ -153,6 +153,8 @@ public class Message implements Serializable {
         this.putProperty(MessageConst.PROPERTY_DELAY_TIME_LEVEL, String.valueOf(level));
     }
 
+    // 是否消息落到磁盘才返回成功
+    // 和同步异步刷盘的区别？为什么要有两个相关的配置项 org.apache.rocketmq.store.config.MessageStoreConfig.flushDiskType
     public boolean isWaitStoreMsgOK() {
         String result = this.getProperty(MessageConst.PROPERTY_WAIT_STORE_MSG_OK);
         if (null == result) {

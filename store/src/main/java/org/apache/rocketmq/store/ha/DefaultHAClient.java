@@ -352,6 +352,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
 
         this.selector.select(1000);
 
+        // 从服务器处理主服务器发过来的消息数据
         result = this.processReadEvent();
         if (!result) {
             return false;

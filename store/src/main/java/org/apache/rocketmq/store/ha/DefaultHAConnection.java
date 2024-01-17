@@ -146,6 +146,7 @@ public class DefaultHAConnection implements HAConnection {
             while (!this.isStopped()) {
                 try {
                     this.selector.select(1000);
+                    // 主服务器处理从服务器的请求，请求内容是HA 复制进度
                     boolean ok = this.processReadEvent();
                     if (!ok) {
                         log.error("processReadEvent error");
@@ -223,6 +224,7 @@ public class DefaultHAConnection implements HAConnection {
                                 log.info("slave[" + DefaultHAConnection.this.clientAddress + "] request offset " + readOffset);
                             }
 
+                            // 唤醒groupTransferService，执行消息同步
                             DefaultHAConnection.this.haService.notifyTransferSome(DefaultHAConnection.this.slaveAckOffset);
                         }
                     } else if (readSize == 0) {

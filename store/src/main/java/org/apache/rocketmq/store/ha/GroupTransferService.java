@@ -139,6 +139,7 @@ public class GroupTransferService extends ServiceThread {
                         req.getNextOffset(), req.getAckNums());
                 }
 
+                // 唤醒消息发送者线程 ❓
                 req.wakeupCustomer(transferOK ? PutMessageStatus.PUT_OK : PutMessageStatus.FLUSH_SLAVE_TIMEOUT);
             }
 

@@ -90,6 +90,7 @@ public class GroupTransferService extends ServiceThread {
                     }
 
                     if (!allAckInSyncStateSet && req.getAckNums() <= 1) {
+                        // 说明当前 req 的数据已经同步到 slave
                         transferOK = haService.getPush2SlaveMaxOffset().get() >= req.getNextOffset();
                         continue;
                     }

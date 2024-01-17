@@ -48,6 +48,7 @@ public class DefaultHAService implements HAService {
 
     protected final List<HAConnection> connectionList = new LinkedList<>();
 
+    // 高可用主服务器监听客户端连接实现
     protected AcceptSocketService acceptSocketService;
 
     protected DefaultMessageStore defaultMessageStore;
@@ -55,8 +56,10 @@ public class DefaultHAService implements HAService {
     protected WaitNotifyObject waitNotifyObject = new WaitNotifyObject();
     protected AtomicLong push2SlaveMaxOffset = new AtomicLong(0);
 
+    // 主从同步通知实现
     protected GroupTransferService groupTransferService;
 
+    // HA客户端实现
     protected HAClient haClient;
 
     protected HAConnectionStateNotificationService haConnectionStateNotificationService;
@@ -123,6 +126,7 @@ public class DefaultHAService implements HAService {
 
     @Override
     public void start() throws Exception {
+        // 开始监听从服务器连接
         this.acceptSocketService.beginAccept();
         this.acceptSocketService.start();
         this.groupTransferService.start();
@@ -281,6 +285,7 @@ public class DefaultHAService implements HAService {
      */
     protected abstract class AcceptSocketService extends ServiceThread {
         private final SocketAddress socketAddressListen;
+        // NIO socket 通道
         private ServerSocketChannel serverSocketChannel;
         private Selector selector;
 
@@ -337,6 +342,8 @@ public class DefaultHAService implements HAService {
 
             while (!this.isStopped()) {
                 try {
+                    // 标准的基于 NIO 的服务端实现
+                    // 每秒处理一次连接事件
                     this.selector.select(1000);
                     Set<SelectionKey> selected = this.selector.selectedKeys();
 
@@ -349,6 +356,7 @@ public class DefaultHAService implements HAService {
                                     DefaultHAService.log.info("HAService receive new connection, "
                                         + sc.socket().getRemoteSocketAddress());
                                     try {
+                                        // 为每个连接创建一个  HAConnection对象，负责主从数据同步逻辑
                                         HAConnection conn = createConnection(sc);
                                         conn.start();
                                         DefaultHAService.this.addConnection(conn);

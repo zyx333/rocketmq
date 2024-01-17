@@ -30,12 +30,15 @@ import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 import org.apache.rocketmq.remoting.netty.NettySystemConfig;
 import org.apache.rocketmq.store.SelectMappedBufferResult;
 
+// HA 主服务器高可用连接对象
 public class DefaultHAConnection implements HAConnection {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private final DefaultHAService haService;
     private final SocketChannel socketChannel;
     private final String clientAddress;
+    // 高可用主节点网络写实现
     private WriteSocketService writeSocketService;
+    // 高可用主节点网络读实现
     private ReadSocketService readSocketService;
     private volatile HAConnectionState currentState = HAConnectionState.TRANSFER;
     private volatile long slaveRequestOffset = -1;

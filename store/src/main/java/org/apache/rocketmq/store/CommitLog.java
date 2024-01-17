@@ -1143,6 +1143,7 @@ public class CommitLog implements Swappable {
 
     private CompletableFuture<PutMessageStatus> handleHA(AppendMessageResult result, PutMessageResult putMessageResult,
         int needAckNums) {
+        //  master 副本也包含在needAckNums中，这里表示只需要 master 写成功
         if (needAckNums >= 0 && needAckNums <= 1) {
             return CompletableFuture.completedFuture(PutMessageStatus.PUT_OK);
         }

@@ -51,6 +51,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
      */
     private long lastWriteTimestamp = System.currentTimeMillis();
 
+    // 从服务器当前的复制进度，即 commitLog 文件的最大偏移量
     private long currentReportedOffset = 0;
     private int dispatchPosition = 0;
     private ByteBuffer byteBufferRead = ByteBuffer.allocate(READ_MAX_BUFFER_SIZE);
@@ -99,8 +100,10 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
         this.reportOffset.position(0);
         this.reportOffset.limit(8);
 
+        // 循环调用多次保证 byteBuffer 全部写入 channel
         for (int i = 0; i < 3 && this.reportOffset.hasRemaining(); i++) {
             try {
+                // 向主服务器发送偏移量
                 this.socketChannel.write(this.reportOffset);
             } catch (IOException e) {
                 log.error(this.getServiceName()
@@ -143,6 +146,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
                 if (readSize > 0) {
                     flowMonitor.addByteCountTransferred(readSize);
                     readSizeZeroTimes = 0;
+                    // channel 中读到数据则追加到内存映射文件
                     boolean result = this.dispatchReadRequest();
                     if (!result) {
                         log.error("HAClient, dispatchReadRequest error");
@@ -150,6 +154,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
                     }
                     lastReadTimestamp = System.currentTimeMillis();
                 } else if (readSize == 0) {
+                    // 连续 3 次读取到0 字节，则结束本次读取任务
                     if (++readSizeZeroTimes >= 3) {
                         break;
                     }
@@ -190,6 +195,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
                     byte[] bodyData = byteBufferRead.array();
                     int dataStart = this.dispatchPosition + msgHeaderSize;
 
+                    // 从服务器追加同步数据到 commitLog
                     this.defaultMessageStore.appendToCommitLog(
                         masterPhyOffset, bodyData, dataStart, bodySize);
 
@@ -234,6 +240,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
         this.currentState = currentState;
     }
 
+    // 连接主服务器
     public boolean connectMaster() throws ClosedChannelException {
         if (null == socketChannel) {
             String addr = this.masterHaAddress.get();
@@ -241,6 +248,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
                 SocketAddress socketAddress = NetworkUtil.string2SocketAddress(addr);
                 this.socketChannel = RemotingHelper.connect(socketAddress);
                 if (this.socketChannel != null) {
+                    // 注册网络读事件
                     this.socketChannel.register(this.selector, SelectionKey.OP_READ);
                     log.info("HAClient connect to master {}", addr);
                     this.changeCurrentState(HAConnectionState.TRANSFER);
@@ -330,6 +338,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
 
     private boolean transferFromMaster() throws IOException {
         boolean result;
+        // 判断是否需要向主服务器上报当前拉取消息偏移量，默认 每隔 5s 上报一次
         if (this.isTimeToReportOffset()) {
             log.info("Slave report current offset {}", this.currentReportedOffset);
             result = this.reportSlaveMaxOffset(this.currentReportedOffset);

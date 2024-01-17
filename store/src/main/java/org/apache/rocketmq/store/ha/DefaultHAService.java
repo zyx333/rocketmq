@@ -114,6 +114,7 @@ public class DefaultHAService implements HAService {
                 this.groupTransferService.notifyTransferSome();
                 break;
             } else {
+                // 循环重试？
                 value = this.push2SlaveMaxOffset.get();
             }
         }

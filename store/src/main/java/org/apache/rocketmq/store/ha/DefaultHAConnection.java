@@ -35,13 +35,16 @@ public class DefaultHAConnection implements HAConnection {
     private static final Logger log = LoggerFactory.getLogger(LoggerName.STORE_LOGGER_NAME);
     private final DefaultHAService haService;
     private final SocketChannel socketChannel;
+    // 客户端地址
     private final String clientAddress;
-    // 高可用主节点网络写实现
+    // 高可用主节点网络写实现，向从节点写数据
     private WriteSocketService writeSocketService;
-    // 高可用主节点网络读实现
+    // 高可用主节点网络读实现，从从节点读数据
     private ReadSocketService readSocketService;
     private volatile HAConnectionState currentState = HAConnectionState.TRANSFER;
+    // 从服务器拉取消息的偏移量
     private volatile long slaveRequestOffset = -1;
+    // 从服务器一拉取完成的消息偏移量
     private volatile long slaveAckOffset = -1;
     private FlowMonitor flowMonitor;
 
@@ -203,11 +206,13 @@ public class DefaultHAConnection implements HAConnection {
 
             while (this.byteBufferRead.hasRemaining()) {
                 try {
+                    // 从 channel 中读取数据到 buffer
                     int readSize = this.socketChannel.read(this.byteBufferRead);
                     if (readSize > 0) {
                         readSizeZeroTimes = 0;
                         this.lastReadTimestamp = DefaultHAConnection.this.haService.getDefaultMessageStore().getSystemClock().now();
                         if ((this.byteBufferRead.position() - this.processPosition) >= 8) {
+                            // 因为 从服务器上报偏移量时是8 个字节的数据 org.apache.rocketmq.store.ha.DefaultHAClient.reportSlaveMaxOffset
                             int pos = this.byteBufferRead.position() - (this.byteBufferRead.position() % 8);
                             long readOffset = this.byteBufferRead.getLong(pos - 8);
                             this.processPosition = pos;
@@ -244,8 +249,10 @@ public class DefaultHAConnection implements HAConnection {
 
         private final int headerSize = 8 + 4;
         private final ByteBuffer byteBufferHeader = ByteBuffer.allocate(headerSize);
+        // 下一次传输的物理偏移量
         private long nextTransferFromWhere = -1;
         private SelectMappedBufferResult selectMappedBufferResult;
+        // 上一次数据是否传输完毕
         private boolean lastWriteOver = true;
         private long lastPrintTimestamp = System.currentTimeMillis();
         private long lastWriteTimestamp = System.currentTimeMillis();
@@ -270,6 +277,7 @@ public class DefaultHAConnection implements HAConnection {
                         continue;
                     }
 
+                    // 表示初次消息传输
                     if (-1 == this.nextTransferFromWhere) {
                         if (0 == DefaultHAConnection.this.slaveRequestOffset) {
                             long masterOffset = DefaultHAConnection.this.haService.getDefaultMessageStore().getCommitLog().getMaxOffset();
@@ -282,8 +290,10 @@ public class DefaultHAConnection implements HAConnection {
                                 masterOffset = 0;
                             }
 
+                            // 从当前 commitLog 最大偏移量开始传输
                             this.nextTransferFromWhere = masterOffset;
                         } else {
+                            // 从 slave 上报的偏移量开始传输
                             this.nextTransferFromWhere = DefaultHAConnection.this.slaveRequestOffset;
                         }
 

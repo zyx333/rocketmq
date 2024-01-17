@@ -93,6 +93,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
         return interval > defaultMessageStore.getMessageStoreConfig().getHaSendHeartbeatInterval();
     }
 
+    // 从服务器上报当前偏移量
     private boolean reportSlaveMaxOffset(final long maxOffset) {
         this.reportOffset.position(0);
         this.reportOffset.limit(8);
@@ -142,6 +143,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
         int readSizeZeroTimes = 0;
         while (this.byteBufferRead.hasRemaining()) {
             try {
+                // 从 channel 中读取数据到  byteBufferRead
                 int readSize = this.socketChannel.read(this.byteBufferRead);
                 if (readSize > 0) {
                     flowMonitor.addByteCountTransferred(readSize);
@@ -305,6 +307,7 @@ public class DefaultHAClient extends ServiceThread implements HAClient {
                     case SHUTDOWN:
                         return;
                     case READY:
+                        // 从服务器处于 ready 状态时连接主服务器
                         if (!this.connectMaster()) {
                             log.warn("HAClient connect to master {} failed", this.masterHaAddress.get());
                             this.waitForRunning(1000 * 5);

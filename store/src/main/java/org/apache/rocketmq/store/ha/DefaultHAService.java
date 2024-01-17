@@ -56,7 +56,7 @@ public class DefaultHAService implements HAService {
     protected WaitNotifyObject waitNotifyObject = new WaitNotifyObject();
     protected AtomicLong push2SlaveMaxOffset = new AtomicLong(0);
 
-    // 主从同步通知实现
+    // 主从同步通知实现,主服务器向从服务器发送数据
     protected GroupTransferService groupTransferService;
 
     // HA客户端实现
@@ -73,6 +73,7 @@ public class DefaultHAService implements HAService {
         this.acceptSocketService = new DefaultAcceptSocketService(defaultMessageStore.getMessageStoreConfig());
         this.groupTransferService = new GroupTransferService(this, defaultMessageStore);
         if (this.defaultMessageStore.getMessageStoreConfig().getBrokerRole() == BrokerRole.SLAVE) {
+            // 从服务器才会初始化 haClient
             this.haClient = new DefaultHAClient(this.defaultMessageStore);
         }
         this.haConnectionStateNotificationService = new HAConnectionStateNotificationService(this, defaultMessageStore);
@@ -344,7 +345,7 @@ public class DefaultHAService implements HAService {
             while (!this.isStopped()) {
                 try {
                     // 标准的基于 NIO 的服务端实现
-                    // 每秒处理一次连接事件
+                    // 每秒处理一次连接事件,select会阻塞住当前线程
                     this.selector.select(1000);
                     Set<SelectionKey> selected = this.selector.selectedKeys();
 
